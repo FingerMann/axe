@@ -1932,6 +1932,45 @@ int64_t CWalletTx::GetTxTime() const
     return n ? n : nTimeReceived;
 }
 
+int CWalletTx::GetRequestCount() const
+{
+    // Returns -1 if it wasn't being tracked
+    int nRequests = -1;
+    {
+        LOCK(pwallet->cs_wallet);
+        if (IsCoinBase())
+        {
+            // Generated block
+            if (!hashUnset())
+            {
+                std::map<uint256, int>::const_iterator mi = pwallet->mapRequestCount.find(hashBlock);
+                if (mi != pwallet->mapRequestCount.end())
+                    nRequests = (*mi).second;
+            }
+        }
+        else
+        {
+            // Did anyone request this transaction?
+            std::map<uint256, int>::const_iterator mi = pwallet->mapRequestCount.find(GetHash());
+            if (mi != pwallet->mapRequestCount.end())
+            {
+                nRequests = (*mi).second;
+
+                // How about the block it's in?
+                if (nRequests == 0 && !hashUnset())
+                {
+                    std::map<uint256, int>::const_iterator _mi = pwallet->mapRequestCount.find(hashBlock);
+                    if (_mi != pwallet->mapRequestCount.end())
+                        nRequests = (*_mi).second;
+                    else
+                        nRequests = 1; // If it's in someone else's block it must have got out
+                }
+            }
+        }
+    }
+    return nRequests;
+}
+
 void CWalletTx::GetAmounts(std::list<COutputEntry>& listReceived,
                            std::list<COutputEntry>& listSent, CAmount& nFee, std::string& strSentAccount, const isminefilter& filter) const
 {
@@ -2067,7 +2106,6 @@ CBlockIndex* CWallet::ScanForWalletTransactions(CBlockIndex* pindexStart, CBlock
         double progress_current = progress_begin;
         while (pindex && !fAbortRescan && !ShutdownRequested())
         {
-            m_scanning_progress = (progress_current - progress_begin) / (progress_end - progress_begin);
             if (pindex->nHeight % 100 == 0 && progress_end - progress_begin > 0.0) {
                 ShowProgress(_("Rescanning..."), std::max(1, std::min(99, (int)((progress_current - progress_begin) / (progress_end - progress_begin) * 100))));
             }
@@ -2329,7 +2367,7 @@ CAmount CWalletTx::GetAvailableWatchOnlyCredit(const bool fUseCache) const
     return nCredit;
 }
 
-CAmount CWalletTx::GetAnonymizedCredit(const CCoinControl* coinControl) const
+CAmount CWalletTx::GetAnonymizedCredit(bool fUseCache) const
 {
     if (!pwallet)
         return 0;
@@ -2338,7 +2376,7 @@ CAmount CWalletTx::GetAnonymizedCredit(const CCoinControl* coinControl) const
     if (IsCoinBase() || GetDepthInMainChain() < 0)
         return 0;
 
-    if (coinControl == nullptr && fAnonymizedCreditCached)
+    if (fUseCache && fAnonymizedCreditCached)
         return nAnonymizedCreditCached;
 
     CAmount nCredit = 0;
@@ -2347,10 +2385,6 @@ CAmount CWalletTx::GetAnonymizedCredit(const CCoinControl* coinControl) const
     {
         const CTxOut &txout = tx->vout[i];
         const COutPoint outpoint = COutPoint(hashTx, i);
-
-        if (coinControl != nullptr && coinControl->HasSelected() && !coinControl->IsSelected(outpoint)) {
-            continue;
-        }
 
         if (pwallet->IsSpent(hashTx, i) || !CPrivateSend::IsDenominatedAmount(txout.nValue)) continue;
 
@@ -2361,11 +2395,8 @@ CAmount CWalletTx::GetAnonymizedCredit(const CCoinControl* coinControl) const
         }
     }
 
-    if (coinControl == nullptr) {
-        nAnonymizedCreditCached = nCredit;
-        fAnonymizedCreditCached = true;
-    }
-
+    nAnonymizedCreditCached = nCredit;
+    fAnonymizedCreditCached = true;
     return nCredit;
 }
 
@@ -2586,7 +2617,7 @@ CAmount CWallet::GetAnonymizableBalance(bool fSkipDenominated, bool fSkipUnconfi
     return nTotal;
 }
 
-CAmount CWallet::GetAnonymizedBalance(const CCoinControl* coinControl) const
+CAmount CWallet::GetAnonymizedBalance() const
 {
     if (!CPrivateSendClientOptions::IsEnabled()) return 0;
 
@@ -2595,7 +2626,7 @@ CAmount CWallet::GetAnonymizedBalance(const CCoinControl* coinControl) const
     LOCK2(cs_main, cs_wallet);
 
     for (auto pcoin : GetSpendableTXs()) {
-        nTotal += pcoin->GetAnonymizedCredit(coinControl);
+        nTotal += pcoin->GetAnonymizedCredit();
     }
 
     return nTotal;
@@ -2823,12 +2854,10 @@ void CWallet::AvailableCoins(std::vector<COutput> &vCoins, bool fOnlySafe, const
             bool found = false;
             if (nCoinType == CoinType::ONLY_FULLY_MIXED) {
                 if (!CPrivateSend::IsDenominatedAmount(pcoin->tx->vout[i].nValue)) continue;
-                int nRounds = GetCappedOutpointPrivateSendRounds(COutPoint(wtxid, i));
-                found = nRounds >= CPrivateSendClientOptions::GetRounds();
+                found = IsFullyMixed(COutPoint(wtxid, i));
             } else if(nCoinType == CoinType::ONLY_READY_TO_MIX) {
                 if (!CPrivateSend::IsDenominatedAmount(pcoin->tx->vout[i].nValue)) continue;
-                int nRounds = GetCappedOutpointPrivateSendRounds(COutPoint(wtxid, i));
-                found = nRounds < CPrivateSendClientOptions::GetRounds();
+                found = !IsFullyMixed(COutPoint(wtxid, i));
             } else if(nCoinType == CoinType::ONLY_NONDENOMINATED) {
                 if (CPrivateSend::IsCollateralAmount(pcoin->tx->vout[i].nValue)) continue; // do not use collateral amounts
                 found = !CPrivateSend::IsDenominatedAmount(pcoin->tx->vout[i].nValue);
@@ -4134,6 +4163,9 @@ bool CWallet::CommitTransaction(CWalletTx& wtxNew, CReserveKey& reservekey, CCon
                 updated_hahes.insert(txin.prevout.hash);
             }
         }
+
+        // Track how many getdata requests our transaction gets
+        mapRequestCount[wtxNew.GetHash()] = 0;
 
         // Get the inserted-CWalletTx from mapWallet so that the
         // fInMempool flag is cached properly
