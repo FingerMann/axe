@@ -2950,7 +2950,6 @@ UniValue loadwallet(const JSONRPCRequest& request)
     if (!wallet) {
         throw JSONRPCError(RPC_WALLET_ERROR, "Wallet loading failed.");
     }
-    AddWallet(wallet);
 
     wallet->postInitProcess();
 
