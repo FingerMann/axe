@@ -32,7 +32,7 @@
 #include <warnings.h>
 
 #if defined(HAVE_CONFIG_H)
-#include <config/dash-config.h>
+#include <config/axe-config.h>
 #endif
 #ifdef ENABLE_WALLET
 #include <privatesend/privatesend-client.h>
