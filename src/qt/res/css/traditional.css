@@ -17,16 +17,16 @@ Loaded in GUIUtil::loadStyleSheet() in guitil.cpp.
 /* do not modify! section updated by update-css-files.py
 <colors>
 
-# Used colors in traditional.css for commit c27a2cc58e
+# Used colors in traditional.css for commit 44de8a93f2
 
 #00000000
 #222222
 #333
 #fff
+#008de4
+#047ac2
 #a84832
-#c30404
-#facccc
-#ff0000
+#ccfafafa
 
 </colors>
 */
@@ -54,7 +54,7 @@ QPushButton - Special case, tabbar replacement buttons
 /* Options dialog buttons */
 #btnMain,
 #btnWallet,
-#btnPrivateSend,
+#btnCoinJoin,
 #btnNetwork,
 #btnDisplay,
 #btnAppearance,
@@ -66,7 +66,7 @@ QPushButton - Special case, tabbar replacement buttons
     border-bottom: 3px solid red;
     padding-bottom: 5px;
     background-color: #00000000;
-    border-color: #ff0000;
+    border-color: #008de4;
 }
 
 /* Debug window buttons */
@@ -78,7 +78,7 @@ QPushButton - Special case, tabbar replacement buttons
 /* Options dialog buttons */
 #btnMain:hover:checked,
 #btnWallet:hover:checked,
-#btnPrivateSend:hover:checked,
+#btnCoinJoin:hover:checked,
 #btnNetwork:hover:checked,
 #btnDisplay:hover:checked,
 #btnAppearance:hover:checked,
@@ -101,7 +101,7 @@ QPushButton - Special case, tabbar replacement buttons
 /* Options dialog buttons */
 #btnMain:hover:!checked,
 #btnWallet:hover:!checked,
-#btnPrivateSend:hover:!checked,
+#btnCoinJoin:hover:!checked,
 #btnNetwork:hover:!checked,
 #btnDisplay:hover:!checked,
 #btnAppearance:hover:!checked,
@@ -112,7 +112,7 @@ QPushButton - Special case, tabbar replacement buttons
     border-radius: 0px;
     border-bottom: 3px solid red;
     background-color: #00000000;
-    border-color: #c30404;
+    border-color: #047ac2;
 }
 
 /* Debug window buttons */
@@ -124,7 +124,7 @@ QPushButton - Special case, tabbar replacement buttons
 /* Options dialog buttons */
 #btnMain:checked,
 #btnWallet:checked,
-#btnPrivateSend:checked,
+#btnCoinJoin:checked,
 #btnNetwork:checked,
 #btnDisplay:checked,
 #btnAppearance:checked,
@@ -145,7 +145,7 @@ ModalOverlay
 QWidget#bgWidget { /* The frame overlaying the overview-page */
     padding-left: 10px;
     padding-right: 10px;
-    background-color: #facccc;
+    background-color: #ccfafafa;
 }
 
 QWidget#contentWidget { /* The actual content with the text/buttons/etc... */
@@ -239,7 +239,7 @@ QWidget#OverviewPage QLabel#labelAlerts {
  }
 
 QWidget .QFrame#frame .QLabel#labelWalletStatus, /* Wallet Sync Status */
-QWidget .QFrame#framePrivateSend .QLabel#labelPrivateSendSyncStatus, /* PrivateSend Sync Status */
+QWidget .QFrame#frameCoinJoin .QLabel#labelCoinJoinSyncStatus, /* CoinJoin Sync Status */
 QWidget .QFrame#frame_2 .QLabel#labelTransactionsStatus { /* Recent Transactions Sync Status */
     color: #a84832;
 }

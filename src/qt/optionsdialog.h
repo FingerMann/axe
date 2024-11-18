@@ -5,7 +5,6 @@
 #ifndef BITCOIN_QT_OPTIONSDIALOG_H
 #define BITCOIN_QT_OPTIONSDIALOG_H
 
-#include <QButtonGroup>
 #include <QDialog>
 #include <QValidator>
 
@@ -14,6 +13,7 @@ class OptionsModel;
 class QValidatedLineEdit;
 
 QT_BEGIN_NAMESPACE
+class QButtonGroup;
 class QDataWidgetMapper;
 QT_END_NAMESPACE
 
@@ -30,7 +30,7 @@ class ProxyAddressValidator : public QValidator
 public:
     explicit ProxyAddressValidator(QObject *parent);
 
-    State validate(QString &input, int &pos) const;
+    State validate(QString &input, int &pos) const override;
 };
 
 /** Preferences dialog. */
@@ -42,8 +42,18 @@ public:
     explicit OptionsDialog(QWidget *parent, bool enableWallet);
     ~OptionsDialog();
 
+    enum Tab {
+        TAB_MAIN,
+        TAB_WALLET,
+        TAB_COINJOIN,
+        TAB_NETWORK,
+        TAB_DISPLAY,
+        TAB_APPEARANCE,
+    };
+
     void setModel(OptionsModel *model);
     void setMapper();
+    void setCurrentTab(OptionsDialog::Tab tab);
 
 private Q_SLOTS:
     /** custom tab buttons clicked */
@@ -56,28 +66,29 @@ private Q_SLOTS:
 
     void on_hideTrayIcon_stateChanged(int fState);
 
+    void togglePruneWarning(bool enabled);
     void showRestartWarning(bool fPersistent = false);
     void clearStatusLabel();
     void updateProxyValidationState();
     /* query the networks, for which the default proxy is used */
     void updateDefaultProxyNets();
 
-    void updatePrivateSendVisibility();
+    void updateCoinJoinVisibility();
 
     void updateWidth();
 
 Q_SIGNALS:
     void appearanceChanged();
-    void proxyIpChecks(QValidatedLineEdit *pUiProxyIp, int nProxyPort);
+    void proxyIpChecks(QValidatedLineEdit *pUiProxyIp, uint16_t nProxyPort);
 
 private:
     Ui::OptionsDialog *ui;
     OptionsModel *model;
     QDataWidgetMapper *mapper;
-    QButtonGroup pageButtons;
+    QButtonGroup* pageButtons;
     QString previousTheme;
     AppearanceWidget* appearance;
-    bool fPrivateSendEnabledPrev{false};
+    bool fCoinJoinEnabledPrev{false};
 
     void showEvent(QShowEvent* event) override;
 };

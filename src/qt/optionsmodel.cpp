@@ -1,28 +1,30 @@
 // Copyright (c) 2011-2015 The Bitcoin Core developers
-// Copyright (c) 2014-2019 The Dash Core developers
+// Copyright (c) 2014-2022 The Dash Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #if defined(HAVE_CONFIG_H)
-#include <config/axe-config.h>
+#include <config/bitcoin-config.h>
 #endif
 
 #include <qt/optionsmodel.h>
 
 #include <qt/bitcoinunits.h>
+#include <qt/guiconstants.h>
 #include <qt/guiutil.h>
 
 #include <interfaces/node.h>
-#include <validation.h> // For DEFAULT_SCRIPTCHECK_THREADS
+#include <mapport.h>
 #include <net.h>
 #include <netbase.h>
-#include <txdb.h> // for -dbcache defaults
+#include <txdb.h>       // for -dbcache defaults
+#include <validation.h> // For DEFAULT_SCRIPTCHECK_THREADS
 
 #ifdef ENABLE_WALLET
-#include <privatesend/privatesend-client.h>
+#include <coinjoin/options.h>
 #endif
 
-#include <QNetworkProxy>
+#include <QDebug>
 #include <QSettings>
 #include <QStringList>
 
@@ -85,44 +87,86 @@ void OptionsModel::Init(bool resetSettings)
 
     if (!settings.contains("fontFamily"))
         settings.setValue("fontFamily", GUIUtil::fontFamilyToString(GUIUtil::getFontFamilyDefault()));
+    if (m_node.softSetArg("-font-family", settings.value("fontFamily").toString().toStdString())) {
+        if (GUIUtil::fontsLoaded()) {
+            GUIUtil::setFontFamily(GUIUtil::fontFamilyFromString(settings.value("fontFamily").toString()));
+        }
+    } else {
+        addOverriddenOption("-font-family");
+    }
 
     if (!settings.contains("fontScale"))
         settings.setValue("fontScale", GUIUtil::getFontScaleDefault());
-    if (!m_node.softSetArg("-font-scale", settings.value("fontScale").toString().toStdString()))
+    if (m_node.softSetArg("-font-scale", settings.value("fontScale").toString().toStdString())) {
+        if (GUIUtil::fontsLoaded()) {
+            GUIUtil::setFontScale(settings.value("fontScale").toInt());
+        }
+    } else {
         addOverriddenOption("-font-scale");
+    }
 
     if (!settings.contains("fontWeightNormal"))
         settings.setValue("fontWeightNormal", GUIUtil::weightToArg(GUIUtil::getFontWeightNormalDefault()));
-    if (!m_node.softSetArg("-font-weight-normal", settings.value("fontWeightNormal").toString().toStdString()))
+    if (m_node.softSetArg("-font-weight-normal", settings.value("fontWeightNormal").toString().toStdString())) {
+        if (GUIUtil::fontsLoaded()) {
+            QFont::Weight weight;
+            GUIUtil::weightFromArg(settings.value("fontWeightNormal").toInt(), weight);
+            if (!GUIUtil::isSupportedWeight(weight)) {
+                // If the currently selected weight is not supported fallback to the lightest weight for normal font.
+                weight = GUIUtil::getSupportedWeights().front();
+                settings.setValue("fontWeightNormal", GUIUtil::weightToArg(weight));
+            }
+            GUIUtil::setFontWeightNormal(weight);
+        }
+    } else {
         addOverriddenOption("-font-weight-normal");
+    }
 
     if (!settings.contains("fontWeightBold"))
         settings.setValue("fontWeightBold", GUIUtil::weightToArg(GUIUtil::getFontWeightBoldDefault()));
-    if (!m_node.softSetArg("-font-weight-bold", settings.value("fontWeightBold").toString().toStdString()))
+    if (m_node.softSetArg("-font-weight-bold", settings.value("fontWeightBold").toString().toStdString())) {
+        if (GUIUtil::fontsLoaded()) {
+            QFont::Weight weight;
+            GUIUtil::weightFromArg(settings.value("fontWeightBold").toInt(), weight);
+            if (!GUIUtil::isSupportedWeight(weight)) {
+                // If the currently selected weight is not supported fallback to the second lightest weight for bold font
+                // or the lightest if there is only one.
+                auto vecSupported = GUIUtil::getSupportedWeights();
+                weight = vecSupported[vecSupported.size() > 1 ? 1 : 0];
+                settings.setValue("fontWeightBold", GUIUtil::weightToArg(weight));
+            }
+            GUIUtil::setFontWeightBold(weight);
+        }
+    } else {
         addOverriddenOption("-font-weight-bold");
+    }
 
 #ifdef ENABLE_WALLET
     if (!settings.contains("fCoinControlFeatures"))
         settings.setValue("fCoinControlFeatures", false);
     fCoinControlFeatures = settings.value("fCoinControlFeatures", false).toBool();
 
+    if (!settings.contains("fKeepChangeAddress"))
+        settings.setValue("fKeepChangeAddress", false);
+    fKeepChangeAddress = settings.value("fKeepChangeAddress", false).toBool();
+
     if (!settings.contains("digits"))
         settings.setValue("digits", "2");
 
-    // PrivateSend
-    if (!settings.contains("fPrivateSendEnabled")) {
-        settings.setValue("fPrivateSendEnabled", true);
+    // CoinJoin
+    if (!settings.contains("fCoinJoinEnabled")) {
+        settings.setValue("fCoinJoinEnabled", true);
     }
-    if (!gArgs.SoftSetBoolArg("-enableprivatesend", settings.value("fPrivateSendEnabled").toBool())) {
-        addOverriddenOption("-enableprivatesend");
+    if (!gArgs.SoftSetBoolArg("-enablecoinjoin", settings.value("fCoinJoinEnabled").toBool())) {
+        addOverriddenOption("-enablecoinjoin");
     }
 
-    if (!settings.contains("fShowAdvancedPSUI"))
-        settings.setValue("fShowAdvancedPSUI", false);
-    fShowAdvancedPSUI = settings.value("fShowAdvancedPSUI", false).toBool();
+    if (!settings.contains("fShowAdvancedCJUI"))
+        settings.setValue("fShowAdvancedCJUI", false);
+    fShowAdvancedCJUI = settings.value("fShowAdvancedCJUI", false).toBool();
 
-    if (!settings.contains("fShowPrivateSendPopups"))
-        settings.setValue("fShowPrivateSendPopups", true);
+    if (!settings.contains("fShowCoinJoinPopups"))
+        settings.setValue("fShowCoinJoinPopups", true);
 
     if (!settings.contains("fLowKeysWarning"))
         settings.setValue("fLowKeysWarning", true);
@@ -137,6 +181,28 @@ void OptionsModel::Init(bool resetSettings)
     // by command-line and show this in the UI.
 
     // Main
+    if (!settings.contains("bPrune"))
+        settings.setValue("bPrune", false);
+    if (!settings.contains("nPruneSize"))
+        settings.setValue("nPruneSize", 2);
+    // Convert prune size from GB to MiB:
+    const uint64_t nPruneSizeMiB = (settings.value("nPruneSize").toInt() * GB_BYTES) >> 20;
+    if (!m_node.softSetArg("-prune", settings.value("bPrune").toBool() ? std::to_string(nPruneSizeMiB) : "0")) {
+        addOverriddenOption("-prune");
+    }
+
+    // If GUI is setting prune, then we also must set disablegovernance and txindex
+    if (settings.value("bPrune").toBool()) {
+        if (gArgs.SoftSetBoolArg("-disablegovernance", true)) {
+            LogPrintf("%s: parameter interaction: -prune=true -> setting -disablegovernance=true\n", __func__);
+            addOverriddenOption("-disablegovernance");
+        }
+        if (gArgs.SoftSetBoolArg("-txindex", false)) {
+            LogPrintf("%s: parameter interaction: -prune=true -> setting -txindex=false\n", __func__);
+            addOverriddenOption("-txindex");
+        }
+    }
+
     if (!settings.contains("nDatabaseCache"))
         settings.setValue("nDatabaseCache", (qint64)nDefaultDbCache);
     if (!m_node.softSetArg("-dbcache", settings.value("nDatabaseCache").toString().toStdString()))
@@ -147,6 +213,9 @@ void OptionsModel::Init(bool resetSettings)
     if (!m_node.softSetArg("-par", settings.value("nThreadsScriptVerif").toString().toStdString()))
         addOverriddenOption("-par");
 
+    if (!settings.contains("strDataDir"))
+        settings.setValue("strDataDir", GUIUtil::getDefaultDataDirectory());
+
     // Wallet
 #ifdef ENABLE_WALLET
     if (!settings.contains("bSpendZeroConfChange"))
@@ -154,29 +223,29 @@ void OptionsModel::Init(bool resetSettings)
     if (!m_node.softSetBoolArg("-spendzeroconfchange", settings.value("bSpendZeroConfChange").toBool()))
         addOverriddenOption("-spendzeroconfchange");
 
-    // PrivateSend
-    if (!settings.contains("nPrivateSendRounds"))
-        settings.setValue("nPrivateSendRounds", DEFAULT_PRIVATESEND_ROUNDS);
-    if (!m_node.softSetArg("-privatesendrounds", settings.value("nPrivateSendRounds").toString().toStdString()))
-        addOverriddenOption("-privatesendrounds");
-    m_node.privateSendOptions().setRounds(settings.value("nPrivateSendRounds").toInt());
+    // CoinJoin
+    if (!settings.contains("nCoinJoinRounds"))
+        settings.setValue("nCoinJoinRounds", DEFAULT_COINJOIN_ROUNDS);
+    if (!m_node.softSetArg("-coinjoinrounds", settings.value("nCoinJoinRounds").toString().toStdString()))
+        addOverriddenOption("-coinjoinrounds");
+    m_node.coinJoinOptions().setRounds(settings.value("nCoinJoinRounds").toInt());
 
-    if (!settings.contains("nPrivateSendAmount")) {
+    if (!settings.contains("nCoinJoinAmount")) {
         // for migration from old settings
         if (!settings.contains("nAnonymizeAxeAmount"))
-            settings.setValue("nPrivateSendAmount", DEFAULT_PRIVATESEND_AMOUNT);
+            settings.setValue("nCoinJoinAmount", DEFAULT_COINJOIN_AMOUNT);
         else
-            settings.setValue("nPrivateSendAmount", settings.value("nAnonymizeAxeAmount").toInt());
+            settings.setValue("nCoinJoinAmount", settings.value("nAnonymizeAxeAmount").toInt());
     }
-    if (!m_node.softSetArg("-privatesendamount", settings.value("nPrivateSendAmount").toString().toStdString()))
-        addOverriddenOption("-privatesendamount");
-    m_node.privateSendOptions().setAmount(settings.value("nPrivateSendAmount").toInt());
+    if (!m_node.softSetArg("-coinjoinamount", settings.value("nCoinJoinAmount").toString().toStdString()))
+        addOverriddenOption("-coinjoinamount");
+    m_node.coinJoinOptions().setAmount(settings.value("nCoinJoinAmount").toInt());
 
-    if (!settings.contains("fPrivateSendMultiSession"))
-        settings.setValue("fPrivateSendMultiSession", DEFAULT_PRIVATESEND_MULTISESSION);
-    if (!m_node.softSetBoolArg("-privatesendmultisession", settings.value("fPrivateSendMultiSession").toBool()))
-        addOverriddenOption("-privatesendmultisession");
-    m_node.privateSendOptions().setMultiSessionEnabled(settings.value("fPrivateSendMultiSession").toBool());
+    if (!settings.contains("fCoinJoinMultiSession"))
+        settings.setValue("fCoinJoinMultiSession", DEFAULT_COINJOIN_MULTISESSION);
+    if (!m_node.softSetBoolArg("-coinjoinmultisession", settings.value("fCoinJoinMultiSession").toBool()))
+        addOverriddenOption("-coinjoinmultisession");
+    m_node.coinJoinOptions().setMultiSessionEnabled(settings.value("fCoinJoinMultiSession").toBool());
 #endif
 
     // Network
@@ -184,6 +253,13 @@ void OptionsModel::Init(bool resetSettings)
         settings.setValue("fUseUPnP", DEFAULT_UPNP);
     if (!m_node.softSetBoolArg("-upnp", settings.value("fUseUPnP").toBool()))
         addOverriddenOption("-upnp");
+
+    if (!settings.contains("fUseNatpmp")) {
+        settings.setValue("fUseNatpmp", DEFAULT_NATPMP);
+    }
+    if (!gArgs.SoftSetBoolArg("-natpmp", settings.value("fUseNatpmp").toBool())) {
+        addOverriddenOption("-natpmp");
+    }
 
     if (!settings.contains("fListen"))
         settings.setValue("fListen", DEFAULT_LISTEN);
@@ -232,7 +308,7 @@ static void CopySettings(QSettings& dst, const QSettings& src)
 /** Back up a QSettings to an ini-formatted file. */
 static void BackupSettings(const fs::path& filename, const QSettings& src)
 {
-    qWarning() << "Backing up GUI settings to" << GUIUtil::boostPathToQString(filename);
+    qInfo() << "Backing up GUI settings to" << GUIUtil::boostPathToQString(filename);
     QSettings dst(GUIUtil::boostPathToQString(filename), QSettings::IniFormat);
     dst.clear();
     CopySettings(dst, src);
@@ -245,8 +321,18 @@ void OptionsModel::Reset()
     // Backup old settings to chain-specific datadir for troubleshooting
     BackupSettings(GetDataDir(true) / "guisettings.ini.bak", settings);
 
+    // Save the strDataDir setting
+    QString dataDir = GUIUtil::getDefaultDataDirectory();
+    dataDir = settings.value("strDataDir", dataDir).toString();
+
     // Remove all entries from our QSettings object
     settings.clear();
+
+    // Set strDataDir
+    settings.setValue("strDataDir", dataDir);
+
+    // Set that this was reset
+    settings.setValue("fReset", true);
 
     // default setting for OptionsModel::StartAtStartup - disabled
     if (GUIUtil::GetStartOnSystemStartup())
@@ -309,7 +395,13 @@ QVariant OptionsModel::data(const QModelIndex & index, int role) const
             return settings.value("fUseUPnP");
 #else
             return false;
-#endif
+#endif // USE_UPNP
+        case MapPortNatpmp:
+#ifdef USE_NATPMP
+            return settings.value("fUseNatpmp");
+#else
+            return false;
+#endif // USE_NATPMP
         case MinimizeOnClose:
             return fMinimizeOnClose;
 
@@ -334,20 +426,22 @@ QVariant OptionsModel::data(const QModelIndex & index, int role) const
             return settings.value("bSpendZeroConfChange");
         case ShowMasternodesTab:
             return settings.value("fShowMasternodesTab");
-        case PrivateSendEnabled:
-            return settings.value("fPrivateSendEnabled");
-        case ShowAdvancedPSUI:
-            return fShowAdvancedPSUI;
-        case ShowPrivateSendPopups:
-            return settings.value("fShowPrivateSendPopups");
+        case ShowGovernanceTab:
+            return settings.value("fShowGovernanceTab");
+        case CoinJoinEnabled:
+            return settings.value("fCoinJoinEnabled");
+        case ShowAdvancedCJUI:
+            return fShowAdvancedCJUI;
+        case ShowCoinJoinPopups:
+            return settings.value("fShowCoinJoinPopups");
         case LowKeysWarning:
             return settings.value("fLowKeysWarning");
-        case PrivateSendRounds:
-            return settings.value("nPrivateSendRounds");
-        case PrivateSendAmount:
-            return settings.value("nPrivateSendAmount");
-        case PrivateSendMultiSession:
-            return settings.value("fPrivateSendMultiSession");
+        case CoinJoinRounds:
+            return settings.value("nCoinJoinRounds");
+        case CoinJoinAmount:
+            return settings.value("nCoinJoinAmount");
+        case CoinJoinMultiSession:
+            return settings.value("fCoinJoinMultiSession");
 #endif
         case DisplayUnit:
             return nDisplayUnit;
@@ -366,19 +460,29 @@ QVariant OptionsModel::data(const QModelIndex & index, int role) const
         case FontWeightNormal: {
             QFont::Weight weight;
             GUIUtil::weightFromArg(settings.value("fontWeightNormal").toInt(), weight);
-            return GUIUtil::supportedWeightToIndex(weight);
+            int nIndex = GUIUtil::supportedWeightToIndex(weight);
+            assert(nIndex != -1);
+            return nIndex;
         }
         case FontWeightBold: {
             QFont::Weight weight;
             GUIUtil::weightFromArg(settings.value("fontWeightBold").toInt(), weight);
-            return GUIUtil::supportedWeightToIndex(weight);
+            int nIndex = GUIUtil::supportedWeightToIndex(weight);
+            assert(nIndex != -1);
+            return nIndex;
         }
         case Language:
             return settings.value("language");
 #ifdef ENABLE_WALLET
         case CoinControlFeatures:
             return fCoinControlFeatures;
+        case KeepChangeAddress:
+            return fKeepChangeAddress;
 #endif // ENABLE_WALLET
+        case Prune:
+            return settings.value("bPrune");
+        case PruneSize:
+            return settings.value("nPruneSize");
         case DatabaseCache:
             return settings.value("nDatabaseCache");
         case ThreadsScriptVerif:
@@ -415,7 +519,9 @@ bool OptionsModel::setData(const QModelIndex & index, const QVariant & value, in
             break;
         case MapPortUPnP: // core option - can be changed on-the-fly
             settings.setValue("fUseUPnP", value.toBool());
-            m_node.mapPort(value.toBool());
+            break;
+        case MapPortNatpmp: // core option - can be changed on-the-fly
+            settings.setValue("fUseNatpmp", value.toBool());
             break;
         case MinimizeOnClose:
             fMinimizeOnClose = value.toBool();
@@ -487,46 +593,52 @@ bool OptionsModel::setData(const QModelIndex & index, const QVariant & value, in
                 setRestartRequired(true);
             }
             break;
-        case PrivateSendEnabled:
-            if (settings.value("fPrivateSendEnabled") != value) {
-                settings.setValue("fPrivateSendEnabled", value.toBool());
-                Q_EMIT privateSendEnabledChanged();
+        case ShowGovernanceTab:
+            if (settings.value("fShowGovernanceTab") != value) {
+                settings.setValue("fShowGovernanceTab", value);
+                setRestartRequired(true);
             }
             break;
-        case ShowAdvancedPSUI:
-            if (settings.value("fShowAdvancedPSUI") != value) {
-                fShowAdvancedPSUI = value.toBool();
-                settings.setValue("fShowAdvancedPSUI", fShowAdvancedPSUI);
-                Q_EMIT advancedPSUIChanged(fShowAdvancedPSUI);
+        case CoinJoinEnabled:
+            if (settings.value("fCoinJoinEnabled") != value) {
+                settings.setValue("fCoinJoinEnabled", value.toBool());
+                Q_EMIT coinJoinEnabledChanged();
             }
             break;
-        case ShowPrivateSendPopups:
-            settings.setValue("fShowPrivateSendPopups", value);
+        case ShowAdvancedCJUI:
+            if (settings.value("fShowAdvancedCJUI") != value) {
+                fShowAdvancedCJUI = value.toBool();
+                settings.setValue("fShowAdvancedCJUI", fShowAdvancedCJUI);
+                Q_EMIT AdvancedCJUIChanged(fShowAdvancedCJUI);
+            }
+            break;
+        case ShowCoinJoinPopups:
+            settings.setValue("fShowCoinJoinPopups", value);
             break;
         case LowKeysWarning:
             settings.setValue("fLowKeysWarning", value);
             break;
-        case PrivateSendRounds:
-            if (settings.value("nPrivateSendRounds") != value)
+        case CoinJoinRounds:
+            if (settings.value("nCoinJoinRounds") != value)
             {
-                m_node.privateSendOptions().setRounds(value.toInt());
-                settings.setValue("nPrivateSendRounds", m_node.privateSendOptions().getRounds());
-                Q_EMIT privateSendRoundsChanged();
+                m_node.coinJoinOptions().setRounds(value.toInt());
+                settings.setValue("nCoinJoinRounds", m_node.coinJoinOptions().getRounds());
+                Q_EMIT coinJoinRoundsChanged();
             }
             break;
-        case PrivateSendAmount:
-            if (settings.value("nPrivateSendAmount") != value)
+        case CoinJoinAmount:
+            if (settings.value("nCoinJoinAmount") != value)
             {
-                m_node.privateSendOptions().setAmount(value.toInt());
-                settings.setValue("nPrivateSendAmount", m_node.privateSendOptions().getAmount());
-                Q_EMIT privateSentAmountChanged();
+                m_node.coinJoinOptions().setAmount(value.toInt());
+                settings.setValue("nCoinJoinAmount", m_node.coinJoinOptions().getAmount());
+                Q_EMIT coinJoinAmountChanged();
             }
             break;
-        case PrivateSendMultiSession:
-            if (settings.value("fPrivateSendMultiSession") != value)
+        case CoinJoinMultiSession:
+            if (settings.value("fCoinJoinMultiSession") != value)
             {
-                m_node.privateSendOptions().setMultiSessionEnabled(value.toBool());
-                settings.setValue("fPrivateSendMultiSession", m_node.privateSendOptions().isMultiSessionEnabled());
+                m_node.coinJoinOptions().setMultiSessionEnabled(value.toBool());
+                settings.setValue("fCoinJoinMultiSession", m_node.coinJoinOptions().isMultiSessionEnabled());
             }
             break;
 #endif
@@ -588,6 +700,23 @@ bool OptionsModel::setData(const QModelIndex & index, const QVariant & value, in
             settings.setValue("fCoinControlFeatures", fCoinControlFeatures);
             Q_EMIT coinControlFeaturesChanged(fCoinControlFeatures);
             break;
+        case KeepChangeAddress:
+            fKeepChangeAddress = value.toBool();
+            settings.setValue("fKeepChangeAddress", fKeepChangeAddress);
+            Q_EMIT keepChangeAddressChanged(fKeepChangeAddress);
+            break;
+        case Prune:
+            if (settings.value("bPrune") != value) {
+                settings.setValue("bPrune", value);
+                setRestartRequired(true);
+            }
+            break;
+        case PruneSize:
+            if (settings.value("nPruneSize") != value) {
+                settings.setValue("nPruneSize", value);
+                setRestartRequired(true);
+            }
+            break;
 #endif // ENABLE_WALLET
         case DatabaseCache:
             if (settings.value("nDatabaseCache") != value) {
@@ -629,27 +758,9 @@ void OptionsModel::setDisplayUnit(const QVariant &value)
     }
 }
 
-bool OptionsModel::getProxySettings(QNetworkProxy& proxy) const
+void OptionsModel::emitCoinJoinEnabledChanged()
 {
-    // Directly query current base proxy, because
-    // GUI settings can be overridden with -proxy.
-    proxyType curProxy;
-    if (m_node.getProxy(NET_IPV4, curProxy)) {
-        proxy.setType(QNetworkProxy::Socks5Proxy);
-        proxy.setHostName(QString::fromStdString(curProxy.proxy.ToStringIP()));
-        proxy.setPort(curProxy.proxy.GetPort());
-
-        return true;
-    }
-    else
-        proxy.setType(QNetworkProxy::NoProxy);
-
-    return false;
-}
-
-void OptionsModel::emitPrivateSendEnabledChanged()
-{
-    Q_EMIT privateSendEnabledChanged();
+    Q_EMIT coinJoinEnabledChanged();
 }
 
 void OptionsModel::setRestartRequired(bool fRequired)
@@ -679,6 +790,16 @@ void OptionsModel::checkAndMigrate()
         if (settingsVersion < 130000 && settings.contains("nDatabaseCache") && settings.value("nDatabaseCache").toLongLong() == 100)
             settings.setValue("nDatabaseCache", (qint64)nDefaultDbCache);
 
+        if (settingsVersion < 170000) {
+            settings.remove("nWindowPos");
+            settings.remove("nWindowSize");
+            settings.remove("fMigrationDone121");
+            settings.remove("bUseInstantX");
+            settings.remove("bUseInstantSend");
+            settings.remove("bUseDarkSend");
+            settings.remove("bUsePrivateSend");
+        }
+
         settings.setValue(strSettingsVersionKey, CLIENT_VERSION);
     }
 
@@ -699,4 +820,31 @@ void OptionsModel::checkAndMigrate()
     if (!GUIUtil::isValidTheme(strActiveTheme)) {
         settings.setValue("theme", GUIUtil::getDefaultTheme());
     }
+
+    // begin PrivateSend -> CoinJoin migration
+    if (settings.contains("nPrivateSendRounds") && !settings.contains("nCoinJoinRounds")) {
+        settings.setValue("nCoinJoinRounds", settings.value("nPrivateSendRounds").toInt());
+        settings.remove("nPrivateSendRounds");
+    }
+    if (settings.contains("nPrivateSendAmount") && !settings.contains("nCoinJoinAmount")) {
+        settings.setValue("nCoinJoinAmount", settings.value("nPrivateSendAmount").toInt());
+        settings.remove("nPrivateSendAmount");
+    }
+    if (settings.contains("fPrivateSendEnabled") && !settings.contains("fCoinJoinEnabled")) {
+        settings.setValue("fCoinJoinEnabled", settings.value("fPrivateSendEnabled").toBool());
+        settings.remove("fPrivateSendEnabled");
+    }
+    if (settings.contains("fPrivateSendMultiSession") && !settings.contains("fCoinJoinMultiSession")) {
+        settings.setValue("fCoinJoinMultiSession", settings.value("fPrivateSendMultiSession").toBool());
+        settings.remove("fPrivateSendMultiSession");
+    }
+    if (settings.contains("fShowAdvancedPSUI") && !settings.contains("fShowAdvancedCJUI")) {
+        settings.setValue("fShowAdvancedCJUI", settings.value("fShowAdvancedPSUI").toBool());
+        settings.remove("fShowAdvancedPSUI");
+    }
+    if (settings.contains("fShowPrivateSendPopups") && !settings.contains("fShowCoinJoinPopups")) {
+        settings.setValue("fShowCoinJoinPopups", settings.value("fShowPrivateSendPopups").toBool());
+        settings.remove("fShowPrivateSendPopups");
+    }
+    // end PrivateSend -> CoinJoin migration
 }

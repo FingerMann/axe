@@ -1,0 +1,22 @@
+QT_TS = \
+  qt/locale/axe_ar.ts \
+  qt/locale/axe_bg.ts \
+  qt/locale/axe_de.ts \
+  qt/locale/axe_en.ts \
+  qt/locale/axe_es.ts \
+  qt/locale/axe_fi.ts \
+  qt/locale/axe_fr.ts \
+  qt/locale/axe_it.ts \
+  qt/locale/axe_ja.ts \
+  qt/locale/axe_ko.ts \
+  qt/locale/axe_nl.ts \
+  qt/locale/axe_pl.ts \
+  qt/locale/axe_pt.ts \
+  qt/locale/axe_ro.ts \
+  qt/locale/axe_ru.ts \
+  qt/locale/axe_sk.ts \
+  qt/locale/axe_th.ts \
+  qt/locale/axe_tr.ts \
+  qt/locale/axe_vi.ts \
+  qt/locale/axe_zh_CN.ts \
+  qt/locale/axe_zh_TW.ts

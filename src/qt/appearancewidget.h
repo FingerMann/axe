@@ -1,4 +1,4 @@
-// Copyright (c) 2020 The Dash Core developers
+// Copyright (c) 2020-2022 The Dash Core developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -46,14 +46,14 @@ private:
     Ui::AppearanceWidget* ui;
     QDataWidgetMapper* mapper;
     OptionsModel* model;
-    bool fAcceptChanges;
-    QString prevTheme;
-    int prevScale;
-    GUIUtil::FontFamily prevFontFamily;
-    QFont::Weight prevWeightNormal;
-    QFont::Weight prevWeightBold;
+    bool fAcceptChanges{false};
+    QString prevTheme{GUIUtil::getActiveTheme()};
+    int prevScale{GUIUtil::getFontScale()};
+    GUIUtil::FontFamily prevFontFamily{GUIUtil::getFontFamily()};
+    QFont::Weight prevWeightNormal{GUIUtil::getFontWeightNormal()};
+    QFont::Weight prevWeightBold{GUIUtil::getFontWeightBold()};
 
-    void updateWeightSlider();
+    void updateWeightSlider(bool fForce = false);
 };
 
 #endif // BITCOIN_QT_APPEARANCEWIDGET_H

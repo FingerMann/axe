@@ -1,11 +1,11 @@
-// Copyright (c) 2014-2018 The Dash Core developers
+// Copyright (c) 2014-2022 The Dash Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <chainparams.h>
 #include <validation.h>
 
-#include <test/test_axe.h>
+#include <test/util/setup_common.h>
 
 #include <boost/test/unit_test.hpp>
 
@@ -35,7 +35,7 @@ BOOST_AUTO_TEST_CASE(block_subsidy_test)
     nPrevBits = 0x1c29ec00;
     nPrevHeight = 5464;
     nSubsidy = GetBlockSubsidy(nPrevBits, nPrevHeight, chainParams->GetConsensus(), false);
-    BOOST_CHECK_EQUAL(nSubsidy, 12200000000ULL);
+    BOOST_CHECK_EQUAL(nSubsidy, 2100000000ULL);
 
     // details for block 5465 (subsidy returned will be for block 5466)
     nPrevBits = 0x1c29ec00;

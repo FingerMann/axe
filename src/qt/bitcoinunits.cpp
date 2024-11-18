@@ -1,11 +1,10 @@
 // Copyright (c) 2011-2015 The Bitcoin Core developers
-// Copyright (c) 2014-2017 The Dash Core developers
+// Copyright (c) 2014-2022 The Dash Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <qt/bitcoinunits.h>
 #include <chainparams.h>
-#include <primitives/transaction.h>
 
 #include <QSettings>
 #include <QStringList>
@@ -22,7 +21,7 @@ QList<BitcoinUnits::Unit> BitcoinUnits::availableUnits()
     unitlist.append(AXE);
     unitlist.append(mAXE);
     unitlist.append(uAXE);
-    unitlist.append(haks);
+    unitlist.append(duffs);
     return unitlist;
 }
 
@@ -33,7 +32,7 @@ bool BitcoinUnits::valid(int unit)
     case AXE:
     case mAXE:
     case uAXE:
-    case haks:
+    case duffs:
         return true;
     default:
         return false;
@@ -49,7 +48,7 @@ QString BitcoinUnits::name(int unit)
             case AXE: return QString("AXE");
             case mAXE: return QString("mAXE");
             case uAXE: return QString::fromUtf8("μAXE");
-            case haks: return QString("haks");
+            case duffs: return QString("duffs");
             default: return QString("???");
         }
     }
@@ -60,7 +59,7 @@ QString BitcoinUnits::name(int unit)
             case AXE: return QString("tAXE");
             case mAXE: return QString("mtAXE");
             case uAXE: return QString::fromUtf8("μtAXE");
-            case haks: return QString("thaks");
+            case duffs: return QString("tduffs");
             default: return QString("???");
         }
     }
@@ -75,7 +74,7 @@ QString BitcoinUnits::description(int unit)
             case AXE: return QString("Axe");
             case mAXE: return QString("Milli-Axe (1 / 1" THIN_SP_UTF8 "000)");
             case uAXE: return QString("Micro-Axe (1 / 1" THIN_SP_UTF8 "000" THIN_SP_UTF8 "000)");
-            case haks: return QString("Ten Nano-Axe (1 / 100" THIN_SP_UTF8 "000" THIN_SP_UTF8 "000)");
+            case duffs: return QString("Ten Nano-Axe (1 / 100" THIN_SP_UTF8 "000" THIN_SP_UTF8 "000)");
             default: return QString("???");
         }
     }
@@ -86,7 +85,7 @@ QString BitcoinUnits::description(int unit)
             case AXE: return QString("TestAxes");
             case mAXE: return QString("Milli-TestAxe (1 / 1" THIN_SP_UTF8 "000)");
             case uAXE: return QString("Micro-TestAxe (1 / 1" THIN_SP_UTF8 "000" THIN_SP_UTF8 "000)");
-            case haks: return QString("Ten Nano-TestAxe (1 / 100" THIN_SP_UTF8 "000" THIN_SP_UTF8 "000)");
+            case duffs: return QString("Ten Nano-TestAxe (1 / 100" THIN_SP_UTF8 "000" THIN_SP_UTF8 "000)");
             default: return QString("???");
         }
     }
@@ -99,7 +98,7 @@ qint64 BitcoinUnits::factor(int unit)
     case AXE:  return 100000000;
     case mAXE: return 100000;
     case uAXE: return 100;
-    case haks: return 1;
+    case duffs: return 1;
     default:   return 100000000;
     }
 }
@@ -111,7 +110,7 @@ int BitcoinUnits::decimals(int unit)
     case AXE: return 8;
     case mAXE: return 5;
     case uAXE: return 2;
-    case haks: return 0;
+    case duffs: return 0;
     default: return 0;
     }
 }
@@ -127,9 +126,7 @@ QString BitcoinUnits::format(int unit, const CAmount& nIn, bool fPlus, Separator
     int num_decimals = decimals(unit);
     qint64 n_abs = (n > 0 ? n : -n);
     qint64 quotient = n_abs / coin;
-    qint64 remainder = n_abs % coin;
     QString quotient_str = QString::number(quotient);
-    QString remainder_str = QString::number(remainder).rightJustified(num_decimals, '0');
 
     // Use SI-style thin space separators as these are locale independent and can't be
     // confused with the decimal marker.
@@ -144,10 +141,13 @@ QString BitcoinUnits::format(int unit, const CAmount& nIn, bool fPlus, Separator
     else if (fPlus && n > 0)
         quotient_str.insert(0, '+');
 
-    if (num_decimals <= 0)
+    if (num_decimals > 0) {
+        qint64 remainder = n_abs % coin;
+        QString remainder_str = QString::number(remainder).rightJustified(num_decimals, '0');
+        return quotient_str + QString(".") + remainder_str;
+    } else {
         return quotient_str;
-
-    return quotient_str + QString(".") + remainder_str;
+    }
 }
 
 

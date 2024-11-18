@@ -17,20 +17,20 @@ Loaded in GUIUtil::loadStyleSheet() in guitil.cpp.
 /* do not modify! section updated by update-css-files.py
 <colors>
 
-# Used colors in dark.css for commit c27a2cc58e
+# Used colors in dark.css for commit 44de8a93f2
 
 #00000000
 #333
+#00599a
+#27507a
 #2d2d2e
 #323233
 #363637
 #39393b
 #4a4a4b
 #585858
-#7c2727
 #818181
 #c7c7c7
-#e60000
 #f6f6f6
 #cc323232
 
@@ -78,7 +78,7 @@ QComboBox,
 QPlainTextEdit,
 QLineEdit {
     background-color: #2d2d2e;
-    border-color: #e60000;
+    border-color: #00599a;
     color: #c7c7c7;
 }
 
@@ -88,7 +88,7 @@ QComboBox:hover:!focus,
 QPlainTextEdit:hover:!focus,
 QLineEdit:hover:!focus {
     background-color: #2d2d2e;
-    border-color: #7c2727;
+    border-color: #27507a;
 }
 
 
@@ -99,7 +99,7 @@ QComboBox:focus,
 QPlainTextEdit:focus,
 QLineEdit:focus {
     background-color: #39393b;
-    border-color: #7c2727;
+    border-color: #27507a;
 }
 
 BitcoinAmountField:disabled,
@@ -117,28 +117,28 @@ QAbstractSpinBox
 ******************************************************/
 
 QAbstractSpinBox::up-arrow {
-    border-image: url(':/images/arrow_up_dark');
+    image: url(':/images/arrow_up_dark');
 }
 QAbstractSpinBox::up-arrow:hover {
-    border-image: url(':/images/arrow_up_light');
+    image: url(':/images/arrow_up_light');
 }
 QAbstractSpinBox::up-arrow:pressed {
-    border-image: url(':/images/arrow_up_dark');
+    image: url(':/images/arrow_up_dark');
 }
 QAbstractSpinBox::up-arrow:disabled {
-    border-image: url(':/images/arrow_light_up_hover');
+    image: url(':/images/arrow_light_up_hover');
 }
 QAbstractSpinBox::down-arrow {
-    border-image: url(':/images/arrow_down_dark');
+    image: url(':/images/arrow_down_dark');
 }
 QAbstractSpinBox::down-arrow:hover {
-    border-image: url(':/images/arrow_down_light');
+    image: url(':/images/arrow_down_light');
 }
 QAbstractSpinBox::down-arrow:pressed {
-    border-image: url(':/images/arrow_down_dark');
+    image: url(':/images/arrow_down_dark');
 }
 QAbstractSpinBox::down-arrow:disabled {
-    border-image: url(':/images/arrow_light_down_hover');
+    image: url(':/images/arrow_light_down_hover');
 }
 
 /******************************************************
@@ -202,33 +202,33 @@ QCheckBox
 
 QCheckBox::indicator:unchecked,
 QCheckBox::indicator:unchecked:pressed {
-    border-image: url(':/images/checkbox_normal_dark');
+    image: url(':/images/checkbox_normal_dark');
 }
 QCheckBox::indicator:checked,
 QCheckBox::indicator:checked:pressed {
-    border-image: url(':/images/checkbox_checked_dark');
+    image: url(':/images/checkbox_checked_dark');
 }
 QCheckBox::indicator:indeterminate,
 QCheckBox::indicator:indeterminate:pressed {
-    border-image: url(':/images/checkbox_partly_checked_dark');
+    image: url(':/images/checkbox_partly_checked_dark');
 }
 QCheckBox::indicator:hover:!pressed:unchecked {
-    border-image: url(':/images/checkbox_normal_hover_dark');
+    image: url(':/images/checkbox_normal_hover_dark');
 }
 QCheckBox::indicator:unchecked:disabled {
-    border-image: url(':/images/checkbox_normal_disabled_dark');
+    image: url(':/images/checkbox_normal_disabled_dark');
 }
 QCheckBox::indicator:checked:!pressed:hover {
-    border-image: url(':/images/checkbox_checked_hover_dark');
+    image: url(':/images/checkbox_checked_hover_dark');
 }
 QCheckBox::indicator:checked:disabled {
-    border-image: url(':/images/checkbox_checked_disabled_dark');
+    image: url(':/images/checkbox_checked_disabled_dark');
 }
 QCheckBox::indicator:indeterminate:hover {
-    border-image: url(':/images/checkbox_partly_checked_hover_dark');
+    image: url(':/images/checkbox_partly_checked_hover_dark');
 }
 QCheckBox::indicator:indeterminate:disabled {
-    border-image: url(':/images/checkbox_partly_checked_disabled_dark');
+    image: url(':/images/checkbox_partly_checked_disabled_dark');
 }
 
 /******************************************************
@@ -253,16 +253,16 @@ QComboBox::item:selected {
 }
 
 QComboBox::down-arrow {
-    border-image: url(':/images/arrow_down_dark') 0 0 0 0 stretch stretch;
+    image: url(':/images/arrow_down_dark') 0 0 0 0 stretch stretch;
 }
 QComboBox::down-arrow:hover {
-    border-image: url(':/images/arrow_down_light') 0 0 0 0 stretch stretch;
+    image: url(':/images/arrow_down_light') 0 0 0 0 stretch stretch;
 }
 QComboBox::down-arrow:pressed {
-    border-image: url(':/images/arrow_down_dark') 0 0 0 0 stretch stretch;
+    image: url(':/images/arrow_down_dark') 0 0 0 0 stretch stretch;
 }
 QComboBox::down-arrow:disabled {
-    border-image: url(':/images/arrow_light_down_hover') 0 0 0 0 stretch stretch;
+    image: url(':/images/arrow_light_down_hover') 0 0 0 0 stretch stretch;
 }
 
 /******************************************************
@@ -280,12 +280,12 @@ QHeaderView
 ******************************************************/
 
 QHeaderView::section { /* Table Header Sections */
-    background-color: #e60000;
+    background-color: #00599a;
     color: #c7c7c7;
 }
 
 QHeaderView::section:hover { /* Table Header Sections */
-    background-color: #7c2727;
+    background-color: #27507a;
     color: #c7c7c7;
 }
 
@@ -349,7 +349,7 @@ QProgressBar {
 }
 
 QProgressBar::chunk {
-    background-color: #e60000;
+    background-color: #00599a;
 }
 
 /******************************************************
@@ -366,12 +366,12 @@ QPushButton
 ******************************************************/
 
 QPushButton {
-    background-color: #e60000;
+    background-color: #00599a;
     color: #c7c7c7;
 }
 
 QPushButton:hover {
-    background-color: #7c2727;
+    background-color: #27507a;
 }
 
 QPushButton:focus {
@@ -380,7 +380,7 @@ QPushButton:focus {
 }
 
 QPushButton:pressed {
-    background-color: #e60000;
+    background-color: #00599a;
 }
 
 QPushButton:disabled {
@@ -475,14 +475,14 @@ QPushButton - Special case, tabbar replacement buttons
 /* Options dialog buttons */
 #btnMain,
 #btnWallet,
-#btnPrivateSend,
+#btnCoinJoin,
 #btnNetwork,
 #btnDisplay,
 #btnAppearance,
 /* Sign/Verify dialog buttons */
 #btnSignMessage,
 #btnVerifyMessage {
-    border-color: #e60000;
+    border-color: #00599a;
     color: #818181;
 }
 
@@ -495,7 +495,7 @@ QPushButton - Special case, tabbar replacement buttons
 /* Options dialog buttons */
 #btnMain:hover:checked,
 #btnWallet:hover:checked,
-#btnPrivateSend:hover:checked,
+#btnCoinJoin:hover:checked,
 #btnNetwork:hover:checked,
 #btnDisplay:hover:checked,
 #btnAppearance:hover:checked,
@@ -515,14 +515,14 @@ QPushButton - Special case, tabbar replacement buttons
 /* Options dialog buttons */
 #btnMain:hover:!checked,
 #btnWallet:hover:!checked,
-#btnPrivateSend:hover:!checked,
+#btnCoinJoin:hover:!checked,
 #btnNetwork:hover:!checked,
 #btnDisplay:hover:!checked,
 #btnAppearance:hover:!checked,
 /* Sign/Verify dialog buttons */
 #btnSignMessage:hover:!checked,
 #btnVerifyMessage:hover:!checked {
-    border-color: #e60000;
+    border-color: #00599a;
     color: #c7c7c7;
 }
 
@@ -535,7 +535,7 @@ QPushButton - Special case, tabbar replacement buttons
 /* Options dialog buttons */
 #btnMain:checked,
 #btnWallet:checked,
-#btnPrivateSend:checked,
+#btnCoinJoin:checked,
 #btnNetwork:checked,
 #btnDisplay:checked,
 #btnAppearance:checked,
@@ -552,23 +552,23 @@ QRadioButton
 
 QRadioButton::indicator:unchecked,
 QRadioButton::indicator:unchecked:pressed {
-    border-image: url(':/images/radio_normal_dark');
+    image: url(':/images/radio_normal_dark');
 }
 QRadioButton::indicator:checked,
 QRadioButton::indicator:checked:pressed {
-    border-image: url(':/images/radio_checked_dark');
+    image: url(':/images/radio_checked_dark');
 }
 QRadioButton::indicator:hover:!pressed:unchecked {
-    border-image: url(':/images/radio_normal_hover_dark');
+    image: url(':/images/radio_normal_hover_dark');
 }
 QRadioButton::indicator:checked:hover:!pressed {
-    border-image: url(':/images/radio_checked_hover_dark');
+    image: url(':/images/radio_checked_hover_dark');
 }
 QRadioButton::indicator:checked:disabled {
-    border-image: url(':/images/radio_checked_disabled_dark');
+    image: url(':/images/radio_checked_disabled_dark');
 }
 QRadioButton::indicator:unchecked:disabled {
-    border-image: url(':/images/radio_normal_disabled_dark');
+    image: url(':/images/radio_normal_disabled_dark');
 }
 
 /******************************************************
@@ -591,10 +591,10 @@ QSlider
 ******************************************************/
 
 QSlider::handle:horizontal {
-	background-color: #e60000;
+	background-color: #00599a;
 }
 QSlider::handle:horizontal:hover {
-	background-color: #7c2727;
+	background-color: #27507a;
 }
 QSlider::sub-page:horizontal {
 	background-color: #c7c7c7;
@@ -662,7 +662,7 @@ QToolBar / QToolButton
 ******************************************************/
 
 QToolBar {
-    background-color: #e60000;
+    background-color: #00599a;
 }
 
 QToolBar > QToolButton {
@@ -671,13 +671,17 @@ QToolBar > QToolButton {
 }
 
 QToolBar > QToolButton:hover:!checked {
-    background-color: #7c2727;
+    background-color: #27507a;
     color: #c7c7c7;
 }
 
 QToolBar > QToolButton:checked {
     background-color: #323233;
     color: #c7c7c7;
+}
+
+QToolBar > QToolButton:disabled {
+    color: #4a4a4b;
 }
 
 /******************************************************
@@ -700,46 +704,46 @@ QTreeWidget {
     border-color: #4a4a4b;
 }
 QTreeWidget::branch::closed:has-children {
-    border-image: url(':/images/arrow_right_dark');
+    image: url(':/images/arrow_right_dark');
 }
 QTreeWidget::branch::closed:has-children:hover {
-    border-image: url(':/images/arrow_right_light');
+    image: url(':/images/arrow_right_light');
 }
 QTreeWidget::branch::open {
-    border-image: url(':/images/arrow_down_dark');
+    image: url(':/images/arrow_down_dark');
 }
 QTreeWidget::branch::open:hover {
-    border-image: url(':/images/arrow_down_light');
+    image: url(':/images/arrow_down_light');
 }
 QTreeWidget::indicator:unchecked,
 QTreeWidget::indicator:unchecked:pressed {
-    border-image: url(':/images/checkbox_normal_dark');
+    image: url(':/images/checkbox_normal_dark');
 }
 QTreeWidget::indicator:checked,
 QTreeWidget::indicator:checked:pressed {
-    border-image: url(':/images/checkbox_checked_dark');
+    image: url(':/images/checkbox_checked_dark');
 }
 QTreeWidget::indicator:indeterminate,
 QTreeWidget::indicator:indeterminate:pressed {
-    border-image: url(':/images/checkbox_partly_checked_dark');
+    image: url(':/images/checkbox_partly_checked_dark');
 }
 QTreeWidget::indicator:hover:!pressed:unchecked {
-    border-image: url(':/images/checkbox_normal_hover_dark');
+    image: url(':/images/checkbox_normal_hover_dark');
 }
 QTreeWidget::indicator:unchecked:disabled {
-    border-image: url(':/images/checkbox_normal_disabled_dark');
+    image: url(':/images/checkbox_normal_disabled_dark');
 }
 QTreeWidget::indicator:checked:!pressed:hover {
-    border-image: url(':/images/checkbox_checked_hover_dark');
+    image: url(':/images/checkbox_checked_hover_dark');
 }
 QTreeWidget::indicator:checked:disabled {
-    border-image: url(':/images/checkbox_checked_disabled_dark');
+    image: url(':/images/checkbox_checked_disabled_dark');
 }
 QTreeWidget::indicator:indeterminate:!pressed:hover {
-    border-image: url(':/images/checkbox_partly_checked_hover_dark');
+    image: url(':/images/checkbox_partly_checked_hover_dark');
 }
 QTreeWidget::indicator:indeterminate:disabled {
-    border-image: url(':/images/checkbox_partly_checked_disabled_dark');
+    image: url(':/images/checkbox_partly_checked_disabled_dark');
 }
 
 /******************************************************
@@ -815,6 +819,14 @@ EditAddressDialog
 /***** No dark.css specific coloring here yet *****/
 
 /******************************************************
+GovernanceList
+******************************************************/
+
+GovernanceList QTableView {
+    color: #c7c7c7;
+}
+
+/******************************************************
 HelpMessageDialog
 ******************************************************/
 
@@ -865,7 +877,7 @@ OverviewPage Balances
 /***** No dark.css specific coloring here yet *****/
 
 /******************************************************
-OverviewPage PrivateSend
+OverviewPage CoinJoin
 ******************************************************/
 
 /***** No dark.css specific coloring here yet *****/
@@ -894,6 +906,10 @@ QWidget#RPCConsole { /* RPC Console Dialog Box */
 
 RPCConsole QTableView {
     color: #c7c7c7;
+}
+
+RPCConsole QWidget#detailWidget {
+    background-color: #323233;
 }
 
 #rpcAutoCompleter {
@@ -1013,55 +1029,55 @@ QScrollBar::sub-line:horizontal:pressed {
 }
 
 QScrollBar:up-arrow {
-    border-image: url(':/images/arrow_up_dark');
+    image: url(':/images/arrow_up_dark');
 }
 QScrollBar:up-arrow:hover {
-    border-image: url(':/images/arrow_up_light');
+    image: url(':/images/arrow_up_light');
 }
 QScrollBar:up-arrow:pressed {
-    border-image: url(':/images/arrow_up_dark');
+    image: url(':/images/arrow_up_dark');
 }
 QScrollBar:up-arrow:disabled {
-    border-image: url(':/images/arrow_light_up_hover');
+    image: url(':/images/arrow_light_up_hover');
 }
 
 QScrollBar:down-arrow {
-    border-image: url(':/images/arrow_down_dark');
+    image: url(':/images/arrow_down_dark');
 }
 QScrollBar:down-arrow:hover {
-    border-image: url(':/images/arrow_down_light');
+    image: url(':/images/arrow_down_light');
 }
 QScrollBar:down-arrow:pressed {
-    border-image: url(':/images/arrow_down_dark');
+    image: url(':/images/arrow_down_dark');
 }
 QScrollBar:down-arrow:disabled {
-    border-image: url(':/images/arrow_light_down_hover');
+    image: url(':/images/arrow_light_down_hover');
 }
 
 QScrollBar:left-arrow {
-    border-image: url(':/images/arrow_left_dark');
+    image: url(':/images/arrow_left_dark');
 }
 QScrollBar:left-arrow:hover {
-    border-image: url(':/images/arrow_left_light');
+    image: url(':/images/arrow_left_light');
 }
 QScrollBar:left-arrow:pressed {
-    border-image: url(':/images/arrow_left_dark');
+    image: url(':/images/arrow_left_dark');
 }
 QScrollBar:left-arrow:disabled {
-    border-image: url(':/images/arrow_light_left_hover');
+    image: url(':/images/arrow_light_left_hover');
 }
 
 QScrollBar:right-arrow {
-    border-image: url(':/images/arrow_right_dark');
+    image: url(':/images/arrow_right_dark');
 }
 QScrollBar:right-arrow:hover {
-    border-image: url(':/images/arrow_right_light');
+    image: url(':/images/arrow_right_light');
 }
 QScrollBar:right-arrow:pressed {
-    border-image: url(':/images/arrow_right_dark');
+    image: url(':/images/arrow_right_dark');
 }
 QScrollBar:right-arrow:disabled {
-    border-image: url(':/images/arrow_light_right_hover');
+    image: url(':/images/arrow_light_right_hover');
 }
 
 </os>

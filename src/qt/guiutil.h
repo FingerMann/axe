@@ -31,9 +31,11 @@ class Node;
 QT_BEGIN_NAMESPACE
 class QAbstractButton;
 class QAbstractItemView;
+class QButtonGroup;
 class QDateTime;
 class QFont;
 class QLineEdit;
+class QProgressDialog;
 class QUrl;
 class QWidget;
 QT_END_NAMESPACE
@@ -70,8 +72,6 @@ namespace GUIUtil
         BACKGROUND_NETSTATS,
         /* Pixel color of generated QR codes. */
         QR_PIXEL,
-        /* Logo color */
-        LOGO,
         /* Alternative color for black/white icons. White part will be filled with this color by default. */
         ICON_ALTERNATIVE_COLOR,
     };
@@ -84,7 +84,7 @@ namespace GUIUtil
         TS_ERROR,
         /* Failed operation text style */
         TS_SUCCESS,
-        /* Comand text style */
+        /* Command text style */
         TS_COMMAND,
         /* General text styles */
         TS_PRIMARY,
@@ -99,19 +99,18 @@ namespace GUIUtil
 
     /** Helper to get an icon colorized with the given color (replaces black) and colorAlternative (replaces white)  */
     QIcon getIcon(const QString& strIcon, ThemedColor color, ThemedColor colorAlternative, const QString& strIconPath = ICONS_PATH);
-    QIcon getIcon(const QString& strIcon, ThemedColor color = ThemedColor::RED, const QString& strIconPath = ICONS_PATH);
+    QIcon getIcon(const QString& strIcon, ThemedColor color = ThemedColor::BLUE, const QString& strIconPath = ICONS_PATH);
 
     /** Helper to set an icon for a button with the given color (replaces black) and colorAlternative (replaces white). */
     void setIcon(QAbstractButton* button, const QString& strIcon, ThemedColor color, ThemedColor colorAlternative, const QSize& size);
-    void setIcon(QAbstractButton* button, const QString& strIcon, ThemedColor color = ThemedColor::RED, const QSize& size = QSize(BUTTON_ICONSIZE, BUTTON_ICONSIZE));
+    void setIcon(QAbstractButton* button, const QString& strIcon, ThemedColor color = ThemedColor::BLUE, const QSize& size = QSize(BUTTON_ICONSIZE, BUTTON_ICONSIZE));
 
     // Create human-readable string from date
     QString dateTimeStr(const QDateTime &datetime);
     QString dateTimeStr(qint64 nTime);
 
-    // Set up widgets for address and amounts
+    // Set up widget for address
     void setupAddressWidget(QValidatedLineEdit *widget, QWidget *parent, bool fAllowURI = false);
-    void setupAmountWidget(QLineEdit *widget, QWidget *parent);
 
     // Setup appearance settings if not done yet
     void setupAppearance(QWidget* parent, OptionsModel* model);
@@ -145,6 +144,11 @@ namespace GUIUtil
     QList<QModelIndex> getEntryData(QAbstractItemView *view, int column);
 
     void setClipboard(const QString& str);
+
+    /**
+     * Determine default data directory for operating system.
+     */
+    QString getDefaultDataDirectory();
 
     /** Get save filename, mimics QFileDialog::getSaveFileName, except that it appends a default suffix
         when no suffix is provided by the user.
@@ -195,9 +199,6 @@ namespace GUIUtil
     // Browse backup folder
     void showBackups();
 
-    // Replace invalid default fonts with known good ones
-    void SubstituteFonts(const QString& language);
-
     /** Qt event filter that intercepts ToolTipChange events, and replaces the tooltip with a rich text
       representation if needed. This assures that Qt can word-wrap long tooltip messages.
       Tooltips longer than the provided size threshold (in characters) are wrapped.
@@ -207,13 +208,28 @@ namespace GUIUtil
         Q_OBJECT
 
     public:
-        explicit ToolTipToRichTextFilter(int size_threshold, QObject *parent = 0);
+        explicit ToolTipToRichTextFilter(int size_threshold, QObject *parent = nullptr);
 
     protected:
-        bool eventFilter(QObject *obj, QEvent *evt);
+        bool eventFilter(QObject *obj, QEvent *evt) override;
 
     private:
         int size_threshold;
+    };
+
+    /**
+     * Qt event filter that intercepts QEvent::FocusOut events for QLabel objects, and
+     * resets their `textInteractionFlags' property to get rid of the visible cursor.
+     *
+     * This is a temporary fix of QTBUG-59514.
+     */
+    class LabelOutOfFocusEventFilter : public QObject
+    {
+        Q_OBJECT
+
+    public:
+        explicit LabelOutOfFocusEventFilter(QObject* parent);
+        bool eventFilter(QObject* watched, QEvent* event) override;
     };
 
     /**
@@ -258,9 +274,6 @@ namespace GUIUtil
     bool GetStartOnSystemStartup();
     bool SetStartOnSystemStartup(bool fAutoStart);
 
-    /** Modify Qt network specific settings on migration */
-    void migrateQtSettings();
-
     /** Change the stylesheet directory. This is used by
         the parameter -custom-css-dir.*/
     void setStyleSheetDirectory(const QString& path);
@@ -278,12 +291,11 @@ namespace GUIUtil
     const QString getDefaultTheme();
 
     /** Check if the given theme name is valid or not */
-    const bool isValidTheme(const QString& strTheme);
+    bool isValidTheme(const QString& strTheme);
 
-    /** Updates the widgets stylesheet and adds it to the list of ui debug elements.
-    Beeing on that list means the stylesheet of the widget gets updated if the
-    related css files has been changed if -debug-ui mode is active. */
-    void loadStyleSheet(QWidget* widget = nullptr, bool fForceUpdate = false);
+    /** Sets the stylesheet of the whole app and updates it if the
+    related css files has been changed and -debug-ui mode is active. */
+    void loadStyleSheet(bool fForceUpdate = false);
 
     enum class FontFamily {
         SystemDefault,
@@ -330,6 +342,8 @@ namespace GUIUtil
 
     /** Load axe specific appliciation fonts */
     bool loadFonts();
+    /** Check if the fonts have been loaded successfully */
+    bool fontsLoaded();
 
     /** Set an application wide default font, depends on the selected theme */
     void setApplicationFont();
@@ -354,12 +368,18 @@ namespace GUIUtil
     /** Get the default bold QFont */
     QFont getFontBold();
 
+    /** Return supported normal default for the current font family */
+    QFont::Weight getSupportedFontWeightNormalDefault();
+    /** Return supported bold default for the current font family */
+    QFont::Weight getSupportedFontWeightBoldDefault();
     /** Return supported weights for the current font family */
     std::vector<QFont::Weight> getSupportedWeights();
     /** Convert an index to a weight in the supported weights vector */
     QFont::Weight supportedWeightFromIndex(int nIndex);
     /** Convert a weight to an index in the supported weights vector */
     int supportedWeightToIndex(QFont::Weight weight);
+    /** Check if a weight is supported by the current font family */
+    bool isSupportedWeight(QFont::Weight weight);
 
     /** Return the name of the currently active theme.*/
     QString getActiveTheme();
@@ -368,7 +388,7 @@ namespace GUIUtil
     bool axeThemeActive();
 
     /** Load the theme and update all UI elements according to the appearance settings. */
-    void loadTheme(QWidget* widget = nullptr, bool fForce = false);
+    void loadTheme(bool fForce = false);
 
     /** Disable the OS default focus rect for macOS because we have custom focus rects
      * set in the css files */
@@ -376,6 +396,9 @@ namespace GUIUtil
 
     /** Enable/Disable the macOS focus rects depending on the current theme. */
     void updateMacFocusRects();
+
+    /** Update shortcuts for individual buttons in QButtonGroup based on their visibility. */
+    void updateButtonGroupShortcuts(QButtonGroup* buttonGroup);
 
     /* Convert QString to OS specific boost path through UTF-8 */
     fs::path qstringToBoostPath(const QString &path);
@@ -389,8 +412,8 @@ namespace GUIUtil
     /* Format CNodeStats.nServices bitmask into a user-readable string */
     QString formatServicesStr(quint64 mask);
 
-    /* Format a CNodeCombinedStats.dPingTime into a user-readable string or display N/A, if 0*/
-    QString formatPingTime(double dPingTime);
+    /* Format a CNodeStats.m_ping_usec into a user-readable string or display N/A, if 0*/
+    QString formatPingTime(int64_t ping_usec);
 
     /* Format a CNodeCombinedStats.nTimeOffset into a user-readable string. */
     QString formatTimeOffset(int64_t nTimeOffset);
@@ -411,7 +434,7 @@ namespace GUIUtil
          */
         void clicked(const QPoint& point);
     protected:
-        void mouseReleaseEvent(QMouseEvent *event);
+        void mouseReleaseEvent(QMouseEvent *event) override;
     };
 
     class ClickableProgressBar : public QProgressBar
@@ -424,22 +447,10 @@ namespace GUIUtil
          */
         void clicked(const QPoint& point);
     protected:
-        void mouseReleaseEvent(QMouseEvent *event);
+        void mouseReleaseEvent(QMouseEvent *event) override;
     };
 
-#if defined(Q_OS_MAC)
-    // workaround for Qt OSX Bug:
-    // https://bugreports.qt-project.org/browse/QTBUG-15631
-    // QProgressBar uses around 10% CPU even when app is in background
-    class ProgressBar : public ClickableProgressBar
-    {
-        bool event(QEvent *e) {
-            return (e->type() != QEvent::StyleAnimationUpdate) ? QProgressBar::event(e) : false;
-        }
-    };
-#else
     typedef ClickableProgressBar ProgressBar;
-#endif
 
     class ItemDelegate : public QItemDelegate
     {
@@ -451,8 +462,24 @@ namespace GUIUtil
         void keyEscapePressed();
 
     private:
-        bool eventFilter(QObject *object, QEvent *event);
+        bool eventFilter(QObject *object, QEvent *event) override;
     };
+
+    // Fix known bugs in QProgressDialog class.
+    void PolishProgressDialog(QProgressDialog* dialog);
+
+    /**
+     * Returns the distance in pixels appropriate for drawing a subsequent character after text.
+     *
+     * In Qt 5.12 and before the QFontMetrics::width() is used and it is deprecated since Qt 13.0.
+     * In Qt 5.11 the QFontMetrics::horizontalAdvance() was introduced.
+     */
+    int TextWidth(const QFontMetrics& fm, const QString& text);
+
+    /**
+     * Writes to debug.log short info about the used Qt and the host system.
+     */
+    void LogQtInfo();
 } // namespace GUIUtil
 
 #endif // BITCOIN_QT_GUIUTIL_H

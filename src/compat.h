@@ -7,24 +7,10 @@
 #define BITCOIN_COMPAT_H
 
 #if defined(HAVE_CONFIG_H)
-#include <config/axe-config.h>
-#endif
-
-#include <type_traits>
-
-// GCC 4.8 is missing some C++11 type_traits,
-// https://www.gnu.org/software/gcc/gcc-5/changes.html
-#if defined(__GNUC__) && __GNUC__ < 5
-#define IS_TRIVIALLY_CONSTRUCTIBLE std::is_trivial
-#else
-#define IS_TRIVIALLY_CONSTRUCTIBLE std::is_trivially_constructible
+#include <config/bitcoin-config.h>
 #endif
 
 #ifdef WIN32
-#ifdef _WIN32_WINNT
-#undef _WIN32_WINNT
-#endif
-#define _WIN32_WINNT 0x0501
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN 1
 #endif
@@ -106,12 +92,16 @@ typedef char* sockopt_arg_type;
 // Note these both should work with the current usage of poll, but best to be safe
 // WIN32 poll is broken https://daniel.haxx.se/blog/2012/10/10/wsapoll-is-broken/
 // __APPLE__ poll is broke https://github.com/bitcoin/bitcoin/pull/14336#issuecomment-437384408
-#if defined(__linux__)
+#if defined(__linux__) || defined(__FreeBSD__)
 #define USE_POLL
 #endif
 
 #if defined(__linux__)
 #define USE_EPOLL
+#endif
+
+#if defined(__FreeBSD__) || defined(__APPLE__)
+#define USE_KQUEUE
 #endif
 
 bool static inline IsSelectableSocket(const SOCKET& s) {

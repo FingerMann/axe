@@ -3,7 +3,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #if defined(HAVE_CONFIG_H)
-#include <config/axe-config.h>
+#include <config/bitcoin-config.h>
 #endif
 
 #include <qt/optionsdialog.h>
@@ -11,6 +11,7 @@
 
 #include <qt/appearancewidget.h>
 #include <qt/bitcoinunits.h>
+#include <qt/guiconstants.h>
 #include <qt/guiutil.h>
 #include <qt/optionsmodel.h>
 
@@ -20,6 +21,7 @@
 #include <netbase.h>
 #include <txdb.h> // for -dbcache defaults
 
+#include <QButtonGroup>
 #include <QDataWidgetMapper>
 #include <QDir>
 #include <QIntValidator>
@@ -27,13 +29,15 @@
 #include <QMessageBox>
 #include <QSettings>
 #include <QShowEvent>
+#include <QSystemTrayIcon>
 #include <QTimer>
 
 OptionsDialog::OptionsDialog(QWidget *parent, bool enableWallet) :
     QDialog(parent),
     ui(new Ui::OptionsDialog),
-    model(0),
-    mapper(0)
+    model(nullptr),
+    mapper(nullptr),
+    pageButtons(nullptr)
 {
     ui->setupUi(this);
 
@@ -55,11 +59,26 @@ OptionsDialog::OptionsDialog(QWidget *parent, bool enableWallet) :
     ui->databaseCache->setMaximum(nMaxDbCache);
     ui->threadsScriptVerif->setMinimum(-GetNumCores());
     ui->threadsScriptVerif->setMaximum(MAX_SCRIPTCHECK_THREADS);
+    ui->pruneWarning->setVisible(false);
+    ui->pruneWarning->setStyleSheet(QString("QLabel { %1 }").arg(GUIUtil::getThemedStyleQString(GUIUtil::ThemedStyle::TS_ERROR)));
+
+    ui->pruneSize->setEnabled(false);
+    connect(ui->prune, &QPushButton::toggled, ui->pruneSize, &QWidget::setEnabled);
+
+    /* Wallet */
+    ui->coinJoinEnabled->setText(tr("Enable %1 features").arg(QString::fromStdString(gCoinJoinName)));
 
     /* Network elements init */
 #ifndef USE_UPNP
     ui->mapPortUpnp->setEnabled(false);
 #endif
+#ifndef USE_NATPMP
+    ui->mapPortNatpmp->setEnabled(false);
+#endif
+    connect(this, &QDialog::accepted, [this](){
+        QSettings settings;
+        model->node().mapPort(settings.value("fUseUPnP").toBool(), settings.value("fUseNatpmp").toBool());
+    });
 
     ui->proxyIp->setEnabled(false);
     ui->proxyPort->setEnabled(false);
@@ -69,30 +88,42 @@ OptionsDialog::OptionsDialog(QWidget *parent, bool enableWallet) :
     ui->proxyPortTor->setEnabled(false);
     ui->proxyPortTor->setValidator(new QIntValidator(1, 65535, this));
 
-    connect(ui->connectSocks, SIGNAL(toggled(bool)), ui->proxyIp, SLOT(setEnabled(bool)));
-    connect(ui->connectSocks, SIGNAL(toggled(bool)), ui->proxyPort, SLOT(setEnabled(bool)));
-    connect(ui->connectSocks, SIGNAL(toggled(bool)), this, SLOT(updateProxyValidationState()));
+    connect(ui->connectSocks, &QPushButton::toggled, ui->proxyIp, &QWidget::setEnabled);
+    connect(ui->connectSocks, &QPushButton::toggled, ui->proxyPort, &QWidget::setEnabled);
+    connect(ui->connectSocks, &QPushButton::toggled, this, &OptionsDialog::updateProxyValidationState);
 
-    connect(ui->connectSocksTor, SIGNAL(toggled(bool)), ui->proxyIpTor, SLOT(setEnabled(bool)));
-    connect(ui->connectSocksTor, SIGNAL(toggled(bool)), ui->proxyPortTor, SLOT(setEnabled(bool)));
-    connect(ui->connectSocksTor, SIGNAL(toggled(bool)), this, SLOT(updateProxyValidationState()));
+    connect(ui->connectSocksTor, &QPushButton::toggled, ui->proxyIpTor, &QWidget::setEnabled);
+    connect(ui->connectSocksTor, &QPushButton::toggled, ui->proxyPortTor, &QWidget::setEnabled);
+    connect(ui->connectSocksTor, &QPushButton::toggled, this, &OptionsDialog::updateProxyValidationState);
 
-    pageButtons.addButton(ui->btnMain, pageButtons.buttons().size());
-    /* Remove Wallet/PrivateSend tabs in case of -disablewallet */
+    /* Window elements init */
+#ifdef Q_OS_MAC
+    /* hide launch at startup option on macOS */
+    ui->bitcoinAtStartup->setVisible(false);
+    ui->verticalLayout_Main->removeWidget(ui->bitcoinAtStartup);
+    ui->verticalLayout_Main->removeItem(ui->horizontalSpacer_0_Main);
+#endif
+
+    pageButtons = new QButtonGroup(this);
+    pageButtons->addButton(ui->btnMain, pageButtons->buttons().size());
+    /* Remove Wallet/CoinJoin tabs and 3rd party-URL textbox in case of -disablewallet */
     if (!enableWallet) {
         ui->stackedWidgetOptions->removeWidget(ui->pageWallet);
         ui->btnWallet->hide();
-        ui->stackedWidgetOptions->removeWidget(ui->pagePrivateSend);
-        ui->btnPrivateSend->hide();
+        ui->stackedWidgetOptions->removeWidget(ui->pageCoinJoin);
+        ui->btnCoinJoin->hide();
+        ui->thirdPartyTxUrlsLabel->setVisible(false);
+        ui->thirdPartyTxUrls->setVisible(false);
     } else {
-        pageButtons.addButton(ui->btnWallet, pageButtons.buttons().size());
-        pageButtons.addButton(ui->btnPrivateSend, pageButtons.buttons().size());
+        ui->btnCoinJoin->setText(QString::fromStdString(gCoinJoinName));
+        pageButtons->addButton(ui->btnWallet, pageButtons->buttons().size());
+        pageButtons->addButton(ui->btnCoinJoin, pageButtons->buttons().size());
     }
-    pageButtons.addButton(ui->btnNetwork, pageButtons.buttons().size());
-    pageButtons.addButton(ui->btnDisplay, pageButtons.buttons().size());
-    pageButtons.addButton(ui->btnAppearance, pageButtons.buttons().size());
+    pageButtons->addButton(ui->btnNetwork, pageButtons->buttons().size());
+    pageButtons->addButton(ui->btnDisplay, pageButtons->buttons().size());
+    pageButtons->addButton(ui->btnAppearance, pageButtons->buttons().size());
 
-    connect(&pageButtons, SIGNAL(buttonClicked(int)), this, SLOT(showPage(int)));
+    connect(pageButtons, QOverload<int>::of(&QButtonGroup::buttonClicked), this, &OptionsDialog::showPage);
 
     showPage(0);
 
@@ -108,10 +139,10 @@ OptionsDialog::OptionsDialog(QWidget *parent, bool enableWallet) :
     /* Language selector */
     QDir translations(":translations");
 
-    ui->bitcoinAtStartup->setToolTip(ui->bitcoinAtStartup->toolTip().arg(tr(PACKAGE_NAME)));
-    ui->bitcoinAtStartup->setText(ui->bitcoinAtStartup->text().arg(tr(PACKAGE_NAME)));
+    ui->bitcoinAtStartup->setToolTip(ui->bitcoinAtStartup->toolTip().arg(PACKAGE_NAME));
+    ui->bitcoinAtStartup->setText(ui->bitcoinAtStartup->text().arg(PACKAGE_NAME));
 
-    ui->lang->setToolTip(ui->lang->toolTip().arg(tr(PACKAGE_NAME)));
+    ui->lang->setToolTip(ui->lang->toolTip().arg(PACKAGE_NAME));
     ui->lang->addItem(QString("(") + tr("default") + QString(")"), QVariant(""));
     for (const QString &langStr : translations.entryList())
     {
@@ -129,8 +160,6 @@ OptionsDialog::OptionsDialog(QWidget *parent, bool enableWallet) :
             ui->lang->addItem(locale.nativeLanguageName() + QString(" (") + langStr + QString(")"), QVariant(langStr));
         }
     }
-    ui->thirdPartyTxUrls->setPlaceholderText("https://example.com/tx/%s");
-
     ui->unit->setModel(new BitcoinUnits(this));
 
     /* Widget-to-option mapper */
@@ -145,10 +174,10 @@ OptionsDialog::OptionsDialog(QWidget *parent, bool enableWallet) :
     /* setup/change UI elements when proxy IPs are invalid/valid */
     ui->proxyIp->setCheckValidator(new ProxyAddressValidator(parent));
     ui->proxyIpTor->setCheckValidator(new ProxyAddressValidator(parent));
-    connect(ui->proxyIp, SIGNAL(validationDidChange(QValidatedLineEdit *)), this, SLOT(updateProxyValidationState()));
-    connect(ui->proxyIpTor, SIGNAL(validationDidChange(QValidatedLineEdit *)), this, SLOT(updateProxyValidationState()));
-    connect(ui->proxyPort, SIGNAL(textChanged(const QString&)), this, SLOT(updateProxyValidationState()));
-    connect(ui->proxyPortTor, SIGNAL(textChanged(const QString&)), this, SLOT(updateProxyValidationState()));
+    connect(ui->proxyIp, &QValidatedLineEdit::validationDidChange, this, &OptionsDialog::updateProxyValidationState);
+    connect(ui->proxyIpTor, &QValidatedLineEdit::validationDidChange, this, &OptionsDialog::updateProxyValidationState);
+    connect(ui->proxyPort, &QLineEdit::textChanged, this, &OptionsDialog::updateProxyValidationState);
+    connect(ui->proxyPortTor, &QLineEdit::textChanged, this, &OptionsDialog::updateProxyValidationState);
 
     QVBoxLayout* appearanceLayout = new QVBoxLayout();
     appearanceLayout->setContentsMargins(0, 0, 0, 0);
@@ -160,10 +189,18 @@ OptionsDialog::OptionsDialog(QWidget *parent, bool enableWallet) :
         updateWidth();
         Q_EMIT appearanceChanged();
     });
+
+    if (!QSystemTrayIcon::isSystemTrayAvailable()) {
+        ui->hideTrayIcon->setChecked(true);
+        ui->hideTrayIcon->setEnabled(false);
+        ui->minimizeToTray->setChecked(false);
+        ui->minimizeToTray->setEnabled(false);
+    }
 }
 
 OptionsDialog::~OptionsDialog()
 {
+    delete pageButtons;
     delete ui;
 }
 
@@ -177,6 +214,10 @@ void OptionsDialog::setModel(OptionsModel *_model)
         if (_model->isRestartRequired())
             showRestartWarning(true);
 
+        // Prune values are in GB to be consistent with intro.cpp
+        static constexpr uint64_t nMinDiskSpace = (MIN_DISK_SPACE_FOR_BLOCK_FILES / GB_BYTES) + (MIN_DISK_SPACE_FOR_BLOCK_FILES % GB_BYTES) ? 1 : 0;
+        ui->pruneSize->setRange(nMinDiskSpace, std::numeric_limits<int>::max());
+
         QString strLabel = _model->getOverriddenByCommandLine();
         if (strLabel.isEmpty()) {
             ui->frame->setHidden(true);
@@ -186,11 +227,11 @@ void OptionsDialog::setModel(OptionsModel *_model)
 
 
 #ifdef ENABLE_WALLET
-        // If -enableprivatesend was passed in on the command line, set the checkbox
+        // If -enablecoinjoin was passed in on the command line, set the checkbox
         // to the value given via commandline and disable it (make it unclickable).
-        if (strLabel.contains("-enableprivatesend")) {
-            ui->privateSendEnabled->setChecked(_model->node().privateSendOptions().isEnabled());
-            ui->privateSendEnabled->setEnabled(false);
+        if (strLabel.contains("-enablecoinjoin")) {
+            ui->coinJoinEnabled->setChecked(_model->node().coinJoinOptions().isEnabled());
+            ui->coinJoinEnabled->setEnabled(false);
         }
 #endif
 
@@ -206,42 +247,51 @@ void OptionsDialog::setModel(OptionsModel *_model)
     /* warn when one of the following settings changes by user action (placed here so init via mapper doesn't trigger them) */
 
     /* Main */
-    connect(ui->databaseCache, SIGNAL(valueChanged(int)), this, SLOT(showRestartWarning()));
-    connect(ui->threadsScriptVerif, SIGNAL(valueChanged(int)), this, SLOT(showRestartWarning()));
+    connect(ui->prune, &QCheckBox::clicked, this, &OptionsDialog::showRestartWarning);
+    connect(ui->prune, &QCheckBox::clicked, this, &OptionsDialog::togglePruneWarning);
+    connect(ui->pruneSize, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged), this, &OptionsDialog::showRestartWarning);
+    connect(ui->databaseCache, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged), this, &OptionsDialog::showRestartWarning);
+    connect(ui->threadsScriptVerif, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged), this, &OptionsDialog::showRestartWarning);
     /* Wallet */
-    connect(ui->showMasternodesTab, SIGNAL(clicked(bool)), this, SLOT(showRestartWarning()));
-    connect(ui->spendZeroConfChange, SIGNAL(clicked(bool)), this, SLOT(showRestartWarning()));
+    connect(ui->showMasternodesTab, &QCheckBox::clicked, this, &OptionsDialog::showRestartWarning);
+    connect(ui->showGovernanceTab, &QCheckBox::clicked, this, &OptionsDialog::showRestartWarning);
+    connect(ui->spendZeroConfChange, &QCheckBox::clicked, this, &OptionsDialog::showRestartWarning);
     /* Network */
-    connect(ui->allowIncoming, SIGNAL(clicked(bool)), this, SLOT(showRestartWarning()));
-    connect(ui->connectSocks, SIGNAL(clicked(bool)), this, SLOT(showRestartWarning()));
-    connect(ui->connectSocksTor, SIGNAL(clicked(bool)), this, SLOT(showRestartWarning()));
+    connect(ui->allowIncoming, &QCheckBox::clicked, this, &OptionsDialog::showRestartWarning);
+    connect(ui->connectSocks, &QCheckBox::clicked, this, &OptionsDialog::showRestartWarning);
+    connect(ui->connectSocksTor, &QCheckBox::clicked, this, &OptionsDialog::showRestartWarning);
     /* Display */
-    connect(ui->digits, SIGNAL(valueChanged()), this, SLOT(showRestartWarning()));
-    connect(ui->lang, SIGNAL(valueChanged()), this, SLOT(showRestartWarning()));
-    connect(ui->thirdPartyTxUrls, SIGNAL(textChanged(const QString &)), this, SLOT(showRestartWarning()));
+    connect(ui->digits, static_cast<void (QValueComboBox::*)()>(&QValueComboBox::valueChanged), [this]{ showRestartWarning(); });
+    connect(ui->lang, static_cast<void (QValueComboBox::*)()>(&QValueComboBox::valueChanged), [this]{ showRestartWarning(); });
+    connect(ui->thirdPartyTxUrls, &QLineEdit::textChanged, [this]{ showRestartWarning(); });
 
-    connect(ui->privateSendEnabled, &QCheckBox::clicked, [=](bool fChecked) {
+    connect(ui->coinJoinEnabled, &QCheckBox::clicked, [=](bool fChecked) {
 #ifdef ENABLE_WALLET
-        model->node().privateSendOptions().setEnabled(fChecked);
+        model->node().coinJoinOptions().setEnabled(fChecked);
 #endif
-        updatePrivateSendVisibility();
+        updateCoinJoinVisibility();
         if (_model != nullptr) {
-            _model->emitPrivateSendEnabledChanged();
+            _model->emitCoinJoinEnabledChanged();
         }
         updateWidth();
     });
 
-    updatePrivateSendVisibility();
+    updateCoinJoinVisibility();
 
-    // Store the current PrivateSend enabled state to recover it if it gets changed but the dialog gets not accepted but declined.
+    // Store the current CoinJoin enabled state to recover it if it gets changed but the dialog gets not accepted but declined.
 #ifdef ENABLE_WALLET
-    fPrivateSendEnabledPrev = model->node().privateSendOptions().isEnabled();
+    fCoinJoinEnabledPrev = model->node().coinJoinOptions().isEnabled();
     connect(this, &OptionsDialog::rejected, [=]() {
-        if (fPrivateSendEnabledPrev != model->node().privateSendOptions().isEnabled()) {
-            ui->privateSendEnabled->click();
+        if (fCoinJoinEnabledPrev != model->node().coinJoinOptions().isEnabled()) {
+            ui->coinJoinEnabled->click();
         }
     });
 #endif
+}
+
+void OptionsDialog::setCurrentTab(OptionsDialog::Tab tab)
+{
+    showPage(int(tab));
 }
 
 void OptionsDialog::setMapper()
@@ -249,27 +299,34 @@ void OptionsDialog::setMapper()
     /* Main */
     mapper->addMapping(ui->bitcoinAtStartup, OptionsModel::StartAtStartup);
 #ifndef Q_OS_MAC
-    mapper->addMapping(ui->hideTrayIcon, OptionsModel::HideTrayIcon);
-    mapper->addMapping(ui->minimizeToTray, OptionsModel::MinimizeToTray);
+    if (QSystemTrayIcon::isSystemTrayAvailable()) {
+        mapper->addMapping(ui->hideTrayIcon, OptionsModel::HideTrayIcon);
+        mapper->addMapping(ui->minimizeToTray, OptionsModel::MinimizeToTray);
+    }
     mapper->addMapping(ui->minimizeOnClose, OptionsModel::MinimizeOnClose);
 #endif
     mapper->addMapping(ui->threadsScriptVerif, OptionsModel::ThreadsScriptVerif);
     mapper->addMapping(ui->databaseCache, OptionsModel::DatabaseCache);
-    mapper->addMapping(ui->privateSendEnabled, OptionsModel::PrivateSendEnabled);
+    mapper->addMapping(ui->prune, OptionsModel::Prune);
+    mapper->addMapping(ui->pruneSize, OptionsModel::PruneSize);
+    mapper->addMapping(ui->coinJoinEnabled, OptionsModel::CoinJoinEnabled);
 
     /* Wallet */
     mapper->addMapping(ui->coinControlFeatures, OptionsModel::CoinControlFeatures);
+    mapper->addMapping(ui->keepChangeAddress, OptionsModel::KeepChangeAddress);
     mapper->addMapping(ui->showMasternodesTab, OptionsModel::ShowMasternodesTab);
-    mapper->addMapping(ui->showAdvancedPSUI, OptionsModel::ShowAdvancedPSUI);
-    mapper->addMapping(ui->showPrivateSendPopups, OptionsModel::ShowPrivateSendPopups);
+    mapper->addMapping(ui->showGovernanceTab, OptionsModel::ShowGovernanceTab);
+    mapper->addMapping(ui->showAdvancedCJUI, OptionsModel::ShowAdvancedCJUI);
+    mapper->addMapping(ui->showCoinJoinPopups, OptionsModel::ShowCoinJoinPopups);
     mapper->addMapping(ui->lowKeysWarning, OptionsModel::LowKeysWarning);
-    mapper->addMapping(ui->privateSendMultiSession, OptionsModel::PrivateSendMultiSession);
+    mapper->addMapping(ui->coinJoinMultiSession, OptionsModel::CoinJoinMultiSession);
     mapper->addMapping(ui->spendZeroConfChange, OptionsModel::SpendZeroConfChange);
-    mapper->addMapping(ui->privateSendRounds, OptionsModel::PrivateSendRounds);
-    mapper->addMapping(ui->privateSendAmount, OptionsModel::PrivateSendAmount);
+    mapper->addMapping(ui->coinJoinRounds, OptionsModel::CoinJoinRounds);
+    mapper->addMapping(ui->coinJoinAmount, OptionsModel::CoinJoinAmount);
 
     /* Network */
     mapper->addMapping(ui->mapPortUpnp, OptionsModel::MapPortUPnP);
+    mapper->addMapping(ui->mapPortNatpmp, OptionsModel::MapPortNatpmp);
     mapper->addMapping(ui->allowIncoming, OptionsModel::Listen);
 
     mapper->addMapping(ui->connectSocks, OptionsModel::ProxyUse);
@@ -294,8 +351,8 @@ void OptionsDialog::setMapper()
 void OptionsDialog::showPage(int index)
 {
     std::vector<QWidget*> vecNormal;
-    QAbstractButton* btnActive = pageButtons.button(index);
-    for (QAbstractButton* button : pageButtons.buttons()) {
+    QAbstractButton* btnActive = pageButtons->button(index);
+    for (QAbstractButton* button : pageButtons->buttons()) {
         if (button != btnActive) {
             vecNormal.push_back(button);
         }
@@ -338,8 +395,8 @@ void OptionsDialog::on_okButton_clicked()
     mapper->submit();
     appearance->accept();
 #ifdef ENABLE_WALLET
-    for (auto& wallet : model->node().getWallets()) {
-        wallet->privateSend().resetCachedBlocks();
+    for (auto& wallet : model->node().walletClient().getWallets()) {
+        wallet->coinJoin().resetCachedBlocks();
         wallet->markDirty();
     }
 #endif // ENABLE_WALLET
@@ -365,6 +422,11 @@ void OptionsDialog::on_hideTrayIcon_stateChanged(int fState)
     }
 }
 
+void OptionsDialog::togglePruneWarning(bool enabled)
+{
+    ui->pruneWarning->setVisible(!ui->pruneWarning->isVisible());
+}
+
 void OptionsDialog::showRestartWarning(bool fPersistent)
 {
     ui->statusLabel->setStyleSheet(GUIUtil::getThemedStyleQString(GUIUtil::ThemedStyle::TS_ERROR));
@@ -378,7 +440,7 @@ void OptionsDialog::showRestartWarning(bool fPersistent)
         ui->statusLabel->setText(tr("This change would require a client restart."));
         // clear non-persistent status label after 10 seconds
         // Todo: should perhaps be a class attribute, if we extend the use of statusLabel
-        QTimer::singleShot(10000, this, SLOT(clearStatusLabel()));
+        QTimer::singleShot(10000, this, &OptionsDialog::clearStatusLabel);
     }
 }
 
@@ -429,26 +491,27 @@ void OptionsDialog::updateDefaultProxyNets()
     (strProxy == strDefaultProxyGUI.toStdString()) ? ui->proxyReachTor->setChecked(true) : ui->proxyReachTor->setChecked(false);
 }
 
-void OptionsDialog::updatePrivateSendVisibility()
+void OptionsDialog::updateCoinJoinVisibility()
 {
 #ifdef ENABLE_WALLET
-    bool fEnabled = model->node().privateSendOptions().isEnabled();
+    bool fEnabled = model->node().coinJoinOptions().isEnabled();
 #else
     bool fEnabled = false;
 #endif
-    ui->btnPrivateSend->setVisible(fEnabled);
+    ui->btnCoinJoin->setVisible(fEnabled);
+    GUIUtil::updateButtonGroupShortcuts(pageButtons);
 }
 
 void OptionsDialog::updateWidth()
 {
     int nWidthWidestButton{0};
     int nButtonsVisible{0};
-    for (QAbstractButton* button : pageButtons.buttons()) {
+    for (QAbstractButton* button : pageButtons->buttons()) {
         if (!button->isVisible()) {
             continue;
         }
         QFontMetrics fm(button->font());
-        nWidthWidestButton = std::max<int>(nWidthWidestButton, fm.width(button->text()));
+        nWidthWidestButton = std::max<int>(nWidthWidestButton, GUIUtil::TextWidth(fm, button->text()));
         ++nButtonsVisible;
     }
     // Add 10 per button as padding and use minimum 585 which is what we used in css before
@@ -461,6 +524,7 @@ void OptionsDialog::showEvent(QShowEvent* event)
 {
     if (!event->spontaneous()) {
         updateWidth();
+        GUIUtil::updateButtonGroupShortcuts(pageButtons);
     }
     QDialog::showEvent(event);
 }
@@ -474,7 +538,7 @@ QValidator::State ProxyAddressValidator::validate(QString &input, int &pos) cons
 {
     Q_UNUSED(pos);
     // Validate the proxy
-    CService serv(LookupNumeric(input.toStdString().c_str(), DEFAULT_GUI_PROXY_PORT));
+    CService serv(LookupNumeric(input.toStdString(), DEFAULT_GUI_PROXY_PORT));
     proxyType addrProxy = proxyType(serv, true);
     if (addrProxy.IsValid())
         return QValidator::Acceptable;

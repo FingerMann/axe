@@ -7,10 +7,18 @@
 
 #include <validationinterface.h>
 
+class CConnman;
+class CDeterministicMNManager;
+class CGovernanceManager;
+class CMasternodeSync;
+struct LLMQContext;
+
 class CDSNotificationInterface : public CValidationInterface
 {
 public:
-    explicit CDSNotificationInterface(CConnman& connmanIn): connman(connmanIn) {}
+    explicit CDSNotificationInterface(CConnman& _connman,
+                                      std::unique_ptr<CMasternodeSync>& _mnsync, std::unique_ptr<CDeterministicMNManager>& _dmnman,
+                                      std::unique_ptr<CGovernanceManager>& _govman, std::unique_ptr<LLMQContext>& _llmq_ctx);
     virtual ~CDSNotificationInterface() = default;
 
     // a small helper to initialize current block height in sub-modules on startup
@@ -23,13 +31,20 @@ protected:
     void SynchronousUpdatedBlockTip(const CBlockIndex *pindexNew, const CBlockIndex *pindexFork, bool fInitialDownload) override;
     void UpdatedBlockTip(const CBlockIndex *pindexNew, const CBlockIndex *pindexFork, bool fInitialDownload) override;
     void TransactionAddedToMempool(const CTransactionRef& tx, int64_t nAcceptTime) override;
+    void TransactionRemovedFromMempool(const CTransactionRef& ptx, MemPoolRemovalReason reason) override;
     void BlockConnected(const std::shared_ptr<const CBlock>& pblock, const CBlockIndex* pindex, const std::vector<CTransactionRef>& vtxConflicted) override;
     void BlockDisconnected(const std::shared_ptr<const CBlock>& pblock, const CBlockIndex* pindexDisconnected) override;
-    void NotifyMasternodeListChanged(bool undo, const CDeterministicMNList& oldMNList, const CDeterministicMNListDiff& diff) override;
-    void NotifyChainLock(const CBlockIndex* pindex, const llmq::CChainLockSig& clsig) override;
+    void NotifyMasternodeListChanged(bool undo, const CDeterministicMNList& oldMNList, const CDeterministicMNListDiff& diff, CConnman& connman) override;
+    void NotifyChainLock(const CBlockIndex* pindex, const std::shared_ptr<const llmq::CChainLockSig>& clsig) override;
 
 private:
     CConnman& connman;
+
+    std::unique_ptr<CMasternodeSync>& mnsync;
+    std::unique_ptr<CDeterministicMNManager>& dmnman;
+    std::unique_ptr<CGovernanceManager>& govman;
+
+    std::unique_ptr<LLMQContext>& llmq_ctx;
 };
 
 #endif // BITCOIN_DSNOTIFICATIONINTERFACE_H

@@ -1,7 +1,11 @@
+// Copyright (c) 2017-2020 The Dash Core developers
+// Distributed under the MIT software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
 #include <qt/trafficgraphdata.h>
 
 const int TrafficGraphData::RangeMinutes[] = {5,10,15,30,60,120,180,360,720,1440};
-const int TrafficGraphData::DESIRED_DATA_SAMPLES = 800;
+const int TrafficGraphData::DESIRED_DATA_SAMPLES = TrafficGraphData::RangeMinutes[TrafficGraphData::Range_5m] * 60; // i.e. one data sample per second for Range_5m
 const int TrafficGraphData::DesiredQueueSizes[] = {
         TrafficGraphData::DESIRED_DATA_SAMPLES,     //Range_5m
         TrafficGraphData::DESIRED_DATA_SAMPLES/2,   //Range_10m

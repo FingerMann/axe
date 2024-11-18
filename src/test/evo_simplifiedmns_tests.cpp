@@ -1,8 +1,8 @@
-// Copyright (c) 2018-2020 The Dash Core developers
+// Copyright (c) 2018-2022 The Dash Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <test/test_axe.h>
+#include <test/util/setup_common.h>
 
 #include <bls/bls.h>
 #include <evo/simplifiedmns.h>
@@ -14,6 +14,8 @@ BOOST_FIXTURE_TEST_SUITE(evo_simplifiedmns_tests, BasicTestingSetup)
 
 BOOST_AUTO_TEST_CASE(simplifiedmns_merkleroots)
 {
+    //TODO: Provide raw data for basic scheme as well
+    bls::bls_legacy_scheme.store(true);
     std::vector<CSimplifiedMNListEntry> entries;
     for (size_t i = 0; i < 15; i++) {
         CSimplifiedMNListEntry smle;
@@ -23,13 +25,10 @@ BOOST_AUTO_TEST_CASE(simplifiedmns_merkleroots)
         std::string ip = strprintf("%d.%d.%d.%d", 0, 0, 0, i);
         Lookup(ip.c_str(), smle.service, i, false);
 
-        uint8_t skBuf[CBLSSecretKey::SerSize];
-        memset(skBuf, 0, sizeof(skBuf));
-        skBuf[0] = (uint8_t)i;
-        CBLSSecretKey sk;
-        sk.SetBuf(skBuf, sizeof(skBuf));
+        std::vector<unsigned char> vecBytes{static_cast<unsigned char>(i)};
+        vecBytes.resize(CBLSSecretKey::SerSize);
 
-        smle.pubKeyOperator.Set(sk.GetPublicKey());
+        smle.pubKeyOperator.Set(CBLSSecretKey(vecBytes).GetPublicKey());
         smle.keyIDVoting.SetHex(strprintf("%040x", i));
         smle.isValid = true;
 

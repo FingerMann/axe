@@ -30,10 +30,9 @@ class CCoinControlWidgetItem : public QTreeWidgetItem
 {
 public:
     explicit CCoinControlWidgetItem(QTreeWidget *parent, int type = Type) : QTreeWidgetItem(parent, type) {}
-    explicit CCoinControlWidgetItem(int type = Type) : QTreeWidgetItem(type) {}
     explicit CCoinControlWidgetItem(QTreeWidgetItem *parent, int type = Type) : QTreeWidgetItem(parent, type) {}
 
-    bool operator<(const QTreeWidgetItem &other) const;
+    bool operator<(const QTreeWidgetItem &other) const override;
 };
 
 
@@ -42,21 +41,18 @@ class CoinControlDialog : public QDialog
     Q_OBJECT
 
 public:
-    explicit CoinControlDialog(QWidget* parent = 0);
+    explicit CoinControlDialog(CCoinControl& coin_control, WalletModel* model, QWidget *parent = nullptr);
     ~CoinControlDialog();
 
-    void setModel(WalletModel *model);
-
     // static because also called from sendcoinsdialog
-    static void updateLabels(WalletModel*, QDialog*);
+    static void updateLabels(CCoinControl& m_coin_control, WalletModel*, QDialog*);
 
     static QList<CAmount> payAmounts;
-    static CCoinControl *coinControl();
     static bool fSubtractFeeFromAmount;
-    static void usePrivateSend(bool fUsePrivateSend);
 
 private:
     Ui::CoinControlDialog *ui;
+    CCoinControl& m_coin_control;
     WalletModel *model;
     int sortColumn;
     Qt::SortOrder sortOrder;
@@ -78,7 +74,7 @@ private:
         COLUMN_AMOUNT,
         COLUMN_LABEL,
         COLUMN_ADDRESS,
-        COLUMN_PRIVATESEND_ROUNDS,
+        COLUMN_COINJOIN_ROUNDS,
         COLUMN_DATE,
         COLUMN_CONFIRMATIONS,
     };
@@ -90,13 +86,6 @@ private:
     };
 
     friend class CCoinControlWidgetItem;
-
-    enum class Mode {
-        NORMAL,
-        PRIVATESEND,
-    };
-
-    static CoinControlDialog::Mode mode;
 
 private Q_SLOTS:
     void showMenu(const QPoint &);

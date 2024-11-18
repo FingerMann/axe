@@ -7,7 +7,8 @@
 
 #include <memory>
 #include <string>
-#include <vector>
+
+class ArgsManager;
 
 /**
  * CBaseChainParams defines the base parameters (shared between axe-cli and axed)
@@ -16,19 +17,22 @@
 class CBaseChainParams
 {
 public:
-    /** BIP70 chain name strings (main, test or regtest) */
+    ///@{
+    /** Chain name strings */
     static const std::string MAIN;
     static const std::string TESTNET;
     static const std::string DEVNET;
     static const std::string REGTEST;
+    ///@}
 
     const std::string& DataDir() const { return strDataDir; }
-    int RPCPort() const { return nRPCPort; }
+    uint16_t RPCPort() const { return nRPCPort; }
 
-protected:
-    CBaseChainParams() {}
+    CBaseChainParams() = delete;
+    CBaseChainParams(const std::string& data_dir, int rpc_port) : nRPCPort(rpc_port), strDataDir(data_dir) {}
 
-    int nRPCPort;
+private:
+    uint16_t nRPCPort;
     std::string strDataDir;
 };
 
@@ -40,10 +44,9 @@ protected:
 std::unique_ptr<CBaseChainParams> CreateBaseChainParams(const std::string& chain);
 
 /**
- * Append the help messages for the chainparams options to the
- * parameter string.
+ *Set the arguments for chainparams
  */
-void AppendParamsHelpMessages(std::string& strUsage, bool debugHelp=true);
+void SetupChainParamsBaseOptions(ArgsManager& argsman);
 
 /**
  * Return the currently selected parameters. This won't change after app
