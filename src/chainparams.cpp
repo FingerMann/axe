@@ -1,7 +1,7 @@
 // Copyright (c) 2010 Satoshi Nakamoto
 // Copyright (c) 2009-2014 The Bitcoin Core developers
-// Copyright (c) 2014-2020 The Dash Core developers
-// Copyright (c) 2017-2020 The Axe Core developers
+// Copyright (c) 2014-2023 The Dash Core developers
+// Copyright (c) 2017-2024 The Axe Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -303,6 +303,9 @@ public:
         consensus.DIP0003Height = 213696;
         consensus.DIP0003EnforcementHeight = 220259;
         consensus.DIP0003EnforcementHash = uint256S("000000000000500c368cfe997135489fa178614d18690d85fa9a3eed839eaa7a");
+        consensus.DIP0008Height = 282240;
+        consensus.BRRHeight = 633024;
+        consensus.MinBIP9WarningHeight = 284256;
         consensus.powLimit = uint256S("00000fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"); // ~uint256(0) >> 20
         consensus.nPowTargetTimespan = 24 * 60 * 60; // Axe: 1 day
         consensus.nPowTargetSpacing = 2.5 * 60; // Axe: 2.5 minutes
