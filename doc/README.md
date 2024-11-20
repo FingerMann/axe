@@ -5,7 +5,7 @@ This is the official reference wallet for AXE digital currency and comprises the
 
 Running
 ---------------------
-The following are some helpful notes on how to run Axe on your native platform.
+The following are some helpful notes on how to run Axe Core on your native platform.
 
 ### Unix
 
@@ -18,24 +18,27 @@ Unpack the files into a directory and run:
 
 Unpack the files into a directory, and then run axe-qt.exe.
 
-### OS X
+### macOS
 
-Drag Axe-Qt to your applications folder, and then run Axe-Qt.
+Drag Axe Core to your applications folder, and then run Axe Core.
 
 ### Need Help?
 
-* See the [Axe documentation](https://github.com/AXErunners/axe/wiki)
+* See the [Axe documentation](https://docs.axe.org)
 for help and more information.
-* Ask for help on [Discord](https://discordapp.com/invite/RKE5PD9) on Support channel.
+* Ask for help on [Axe Discord](http://stayaxey.com)
+* Ask for help on the [Axe Forum](https://axe.org/forum)
 
 Building
 ---------------------
 The following are developer notes on how to build Axe Core on your native platform. They are not complete guides, but include notes on the necessary libraries, compile flags, etc.
 
-- [OS X Build Notes](build-osx.md)
+- [Dependencies](dependencies.md)
+- [macOS Build Notes](build-osx.md)
 - [Unix Build Notes](build-unix.md)
 - [Windows Build Notes](build-windows.md)
 - [OpenBSD Build Notes](build-openbsd.md)
+- [NetBSD Build Notes](build-netbsd.md)
 - [Gitian Building Guide](gitian-building.md)
 
 Development
@@ -43,12 +46,14 @@ Development
 The Axe Core repo's [root README](/README.md) contains relevant information on the development process and automated testing.
 
 - [Developer Notes](developer-notes.md)
+- [Productivity Notes](productivity.md)
 - [Release Notes](release-notes.md)
 - [Release Process](release-process.md)
 - Source Code Documentation ***TODO***
 - [Translation Process](translation_process.md)
 - [Translation Strings Policy](translation_strings_policy.md)
 - [Travis CI](travis-ci.md)
+- [JSON-RPC Interface](JSON-RPC-interface.md)
 - [Unauthenticated REST Interface](REST-interface.md)
 - [Shared Libraries](shared-libraries.md)
 - [BIPS](bips.md)
@@ -62,15 +67,16 @@ The Axe Core repo's [root README](/README.md) contains relevant information on t
 
 ### Miscellaneous
 - [Assets Attribution](assets-attribution.md)
+- [axe.conf Configuration File](axe-conf.md)
 - [Files](files.md)
 - [Fuzz-testing](fuzzing.md)
+- [Reduce Memory](reduce-memory.md)
 - [Reduce Traffic](reduce-traffic.md)
 - [Tor Support](tor.md)
 - [Init Scripts (systemd/upstart/openrc)](init.md)
 - [ZMQ](zmq.md)
+- [PSBT support](psbt.md)
 
 License
 ---------------------
 Distributed under the [MIT software license](/COPYING).
-This product includes software developed by the OpenSSL Project for use in the [OpenSSL Toolkit](https://www.openssl.org/). This product includes
-cryptographic software written by Eric Young ([eay@cryptsoft.com](mailto:eay@cryptsoft.com)), and UPnP software written by Thomas Bernard.
