@@ -68,7 +68,7 @@ void CSporkManager::Clear()
 void CSporkManager::CheckAndRemove()
 {
     LOCK(cs);
-    assert(!setSporkPubKeyIDs.empty());
+    // assert(!setSporkPubKeyIDs.empty());
 
     for (auto itActive = mapSporksActive.begin(); itActive != mapSporksActive.end();) {
         auto itSignerPair = itActive->second.begin();

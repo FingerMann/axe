@@ -1794,30 +1794,6 @@ bool AppInitMain(const CoreContext& context, NodeContext& node, interfaces::Bloc
     ::sporkManager = std::make_unique<CSporkManager>();
     ::masternodeSync = std::make_unique<CMasternodeSync>(*node.connman);
 
-    std::vector<std::string> vSporkAddresses;
-    if (args.IsArgSet("-sporkaddr")) {
-        vSporkAddresses = args.GetArgs("-sporkaddr");
-    } else {
-        vSporkAddresses = Params().SporkAddresses();
-    }
-    for (const auto& address: vSporkAddresses) {
-        if (!::sporkManager->SetSporkAddress(address)) {
-            return InitError(_("Invalid spork address specified with -sporkaddr"));
-        }
-    }
-
-    int minsporkkeys = args.GetArg("-minsporkkeys", Params().MinSporkKeys());
-    if (!::sporkManager->SetMinSporkKeys(minsporkkeys)) {
-        return InitError(_("Invalid minimum number of spork signers specified with -minsporkkeys"));
-    }
-
-
-    if (args.IsArgSet("-sporkkey")) { // spork priv key
-        if (!::sporkManager->SetPrivKey(args.GetArg("-sporkkey", ""))) {
-            return InitError(_("Unable to sign spork message, wrong key?"));
-        }
-    }
-
     // sanitize comments per BIP-0014, format user agent and check total size
     std::vector<std::string> uacomments;
 
