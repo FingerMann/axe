@@ -221,7 +221,7 @@ public:
 
         // Deployment of DIP0020, DIP0021 and LLMQ_100_67 quorums
         consensus.vDeployments[Consensus::DEPLOYMENT_DIP0020].bit = 6;
-        consensus.vDeployments[Consensus::DEPLOYMENT_DIP0020].nStartTime = 1736726600; // Jan 13th, 2025
+        consensus.vDeployments[Consensus::DEPLOYMENT_DIP0020].nStartTime = 1732369600; // Nov 23rd, 2024
         consensus.vDeployments[Consensus::DEPLOYMENT_DIP0020].nTimeout = 999999999999ULL;
         consensus.vDeployments[Consensus::DEPLOYMENT_DIP0020].nWindowSize = 4032;
         consensus.vDeployments[Consensus::DEPLOYMENT_DIP0020].nThresholdStart = 3226; // 80% of 4032
@@ -324,7 +324,7 @@ public:
         nPoolMaxParticipants = 20;
         nFulfilledRequestExpireTime = 60*60; // fulfilled requests expire in 1 hour
 
-        vSporkAddresses = {"PXXXXXyRm1Dm9tXX6uv9D7gidWyXXXXvXZ"}; /* dummy */
+        vSporkAddresses = {""}; /* dummy */
         nMinSporkKeys = 1;
         fBIP9CheckMasternodesUpgraded = true;
 
