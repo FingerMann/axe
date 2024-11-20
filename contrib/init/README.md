@@ -5,7 +5,7 @@ Upstart: axed.conf
 OpenRC:  axed.openrc
          axed.openrcconf
 CentOS:  axed.init
-OS X:    org.axe.axed.plist
+macOS:   org.axe.axed.plist
 ```
 have been made available to assist packagers in creating node packages here.
 

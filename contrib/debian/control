@@ -1,32 +1,27 @@
 Source: axe
 Section: utils
 Priority: optional
-Maintainer: AXErunners <info@axerunners.com>
-Uploaders: AXErunners <info@axerunners.com>
+Maintainer: Holger Schinzel <holger@axe.org>
+Uploaders: Holger Schinzel <holger@axe.org>
 Build-Depends: debhelper,
  devscripts,
  automake,
  libtool,
  bash-completion,
  libdb4.8++-dev,
- libssl-dev,
  pkg-config,
  libevent-dev,
- libboost-system1.48-dev | libboost-system-dev (>> 1.47),
  libboost-filesystem1.48-dev | libboost-filesystem-dev (>> 1.47),
- libboost-program-options1.48-dev | libboost-program-options-dev (>> 1.47),
  libboost-thread1.48-dev | libboost-thread-dev (>> 1.47),
  libboost-test1.48-dev | libboost-test-dev (>> 1.47),
- libboost-chrono1.48-dev | libboost-chrono-dev (>> 1.47),
  libminiupnpc8-dev | libminiupnpc-dev,
  qt4-qmake, libqt4-dev,
  qttools5-dev-tools, qttools5-dev,
  libqrencode-dev,
- libprotobuf-dev, protobuf-compiler,
  python,
  libzmq3-dev
 Standards-Version: 3.9.2
-Homepage: https://axerunners.com/
+Homepage: https://www.axe.org/
 Vcs-Git: git://github.com/axerunners/axe.git
 Vcs-Browser: https://github.com/axerunners/axe
 

@@ -5,20 +5,45 @@
 # See "man systemd.service" for details.
 
 # Note that almost all daemon options could be specified in
-# /etc/axe/axe.conf
+# /etc/axe/axe.conf, except for those explicitly specified as arguments
+# in ExecStart=
 
 [Unit]
 Description=Axe daemon
 After=network.target
 
 [Service]
-ExecStart=/usr/bin/axed -daemon -conf=/etc/axe/axe.conf -pid=/run/axed/axed.pid
-# Creates /run/axe owned by axecore
-RuntimeDirectory=axed
-User=axecore
+ExecStart=/usr/bin/axed -daemon \
+                                                            -pid=/run/axed/axed.pid \
+                                                            -conf=/etc/axe/axe.conf  \
+                                                            -datadir=/var/lib/axed
+
+# Process management
+####################
+
 Type=forking
 PIDFile=/run/axed/axed.pid
 Restart=on-failure
+TimeoutStopSec=600
+
+# Directory creation and permissions
+####################################
+
+# Run as axe:axe
+User=axecore
+Group=axecore
+
+# /run/axed
+RuntimeDirectory=axed
+RuntimeDirectoryMode=0710
+
+# /etc/axe
+ConfigurationDirectory=axe
+ConfigurationDirectoryMode=0710
+
+# /var/lib/axed
+StateDirectory=axed
+StateDirectoryMode=0710
 
 # Hardening measures
 ####################

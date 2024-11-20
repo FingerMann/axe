@@ -32,7 +32,7 @@ folders = [
     "src/qt/res/images",
     "share/pixmaps"
 ]
-basePath = subprocess.check_output([git, 'rev-parse', '--show-toplevel'], universal_newlines=True).rstrip('\n')
+basePath = subprocess.check_output([git, 'rev-parse', '--show-toplevel'], universal_newlines=True, encoding='utf8').rstrip('\n')
 totalSaveBytes = 0
 noHashChange = True
 
@@ -46,7 +46,6 @@ for folder in folders:
             file_path = os.path.join(absFolder, file)
             fileMetaMap = {'file' : file, 'osize': os.path.getsize(file_path), 'sha256Old' : file_hash(file_path)}
             fileMetaMap['contentHashPre'] = content_hash(file_path)
-
             try:
                 subprocess.call([pngcrush, "-brute", "-ow", "-rem", "gAMA", "-rem", "cHRM", "-rem", "iCCP", "-rem", "sRGB", "-rem", "alla", "-rem", "text", file_path],
                                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -55,7 +54,7 @@ for folder in folders:
                 sys.exit(0)
 
             #verify
-            if "Not a PNG file" in subprocess.check_output([pngcrush, "-n", "-v", file_path], stderr=subprocess.STDOUT, universal_newlines=True):
+            if "Not a PNG file" in subprocess.check_output([pngcrush, "-n", "-v", file_path], stderr=subprocess.STDOUT, universal_newlines=True, encoding='utf8'):
                 print("PNG file "+file+" is corrupted after crushing, check out pngcursh version")
                 sys.exit(1)
 

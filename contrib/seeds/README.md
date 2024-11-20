@@ -5,7 +5,7 @@ Utility to generate the seeds.txt list that is compiled into the client
 
 The seeds compiled into the release are created from the current protx list, like this:
 
-    axe-cli protx list valid 1 385621 > protx_list.json
+    axe-cli protx list valid 1 1716101 > protx_list.json
     python3 makeseeds.py < protx_list.json > nodes_main.txt
     python3 generate-seeds.py . > ../../src/chainparamsseeds.h
 
@@ -17,4 +17,5 @@ that the list is as expected.
 
 Ubuntu:
 
-    sudo apt-get install python3-dnspython
+    sudo apt-get install python3-pip
+    pip3 install dnspython
