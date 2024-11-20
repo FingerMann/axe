@@ -322,7 +322,7 @@ Setting up the Gitian image
 -------------------------
 
 Gitian needs a virtual image of the operating system to build in.
-Currently this is Ubuntu Bionic x86_64.
+Currently this is Ubuntu Trusty x86_64.
 This image will be copied and used every time that a build is started to
 make sure that the build is deterministic.
 Creating the image will take a while, but only has to be done once.
@@ -349,7 +349,7 @@ There will be a lot of warnings printed during the build of the image. These can
 Getting and building the inputs
 --------------------------------
 
-At this point you have two options, you can either use the automated script (found in [contrib/gitian-build.py](/contrib/gitian-build.py)) or you could manually do everything by following this guide. If you're using the automated script, then run it with the "--setup" command. Afterwards, run it with the "--build" command (example: "contrib/gitian-building.sh -b signer 1.2.0"). Otherwise ignore this.
+At this point you have two options, you can either use the automated script (found in [contrib/gitian-build.py](/contrib/gitian-build.py)) or you could manually do everything by following this guide. If you're using the automated script, then run it with the "--setup" command. Afterwards, run it with the "--build" command (example: "contrib/gitian-building.sh -b signer 0.13.0"). Otherwise ignore this.
 
 Follow the instructions in [doc/release-process.md](release-process.md#fetch-and-create-inputs-first-time-or-when-dependency-versions-change)
 in the Axe Core repository under 'Fetch and create inputs' to install sources which require
@@ -360,7 +360,7 @@ offline.
 Building Axe Core
 ----------------
 
-To build Axe Core (for Linux, OS X and Windows) just follow the steps under 'perform
+To build Axe Core (for Linux, macOS and Windows) just follow the steps under 'perform
 Gitian builds' in [doc/release-process.md](release-process.md#setup-and-perform-gitian-builds) in the Axe Core repository.
 
 This may take some time as it will build all the dependencies needed for each descriptor.
