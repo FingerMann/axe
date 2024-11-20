@@ -15,14 +15,14 @@ Service User
 
 All three Linux startup configurations assume the existence of a "axecore" user
 and group.  They must be created before attempting to use these scripts.
-The OS X configuration assumes axed will be set up for the current user.
+The macOS configuration assumes axed will be set up for the current user.
 
 Configuration
 ---------------------------------
 
-At a bare minimum, axed requires that the rpcpassword setting be set
-when running as a daemon.  If the configuration file does not exist or this
-setting is not set, axed will shutdown promptly after startup.
+Running axed as a daemon does not require any manual configuration. You may
+set the `rpcauth` setting in the `axe.conf` configuration file to override
+the default behaviour of using a special cookie for authentication.
 
 This password does not have to be remembered or typed as it is mostly used
 as a fixed token that axed and client programs read from the configuration
@@ -55,8 +55,8 @@ All three configurations assume several paths that might need to be adjusted.
 
 Binary:              `/usr/bin/axed`
 Configuration file:  `/etc/axecore/axe.conf`
-Data directory:      `/var/lib/axed`  
-PID file:            `/var/run/axed/axed.pid` (OpenRC and Upstart) or `/var/lib/axed/axed.pid` (systemd)
+Data directory:      `/var/lib/axed`
+PID file:            `/var/run/axed/axed.pid` (OpenRC and Upstart) or `/run/axed/axed.pid` (systemd)
 Lock file:           `/var/lock/subsys/axed` (CentOS)
 
 The configuration file, PID directory (if applicable) and data directory
@@ -65,7 +65,23 @@ reasons to make the configuration file and data directory only readable by the
 axecore user and group.  Access to axe-cli and other axed rpc clients
 can then be controlled by group membership.
 
-### Mac OS X
+NOTE: When using the systemd .service file, the creation of the aforementioned
+directories and the setting of their permissions is automatically handled by
+systemd. Directories are given a permission of 710, giving the axecore user and group
+access to files under it _if_ the files themselves give permission to the
+axecore user and group to do so (e.g. when `-sysperms` is specified). This does not allow
+for the listing of files under the directory.
+
+NOTE: It is not currently possible to override `datadir` in
+`/etc/axe/axe.conf` with the current systemd, OpenRC, and Upstart init
+files out-of-the-box. This is because the command line options specified in the
+init files take precedence over the configurations in
+`/etc/axe/axe.conf`. However, some init systems have their own
+configuration mechanisms that would allow for overriding the command line
+options specified in the init files (e.g. setting `BITCOIND_DATADIR` for
+OpenRC).
+
+### macOS
 
 Binary:              `/usr/local/bin/axed`
 Configuration file:  `~/Library/Application Support/AxeCore/axe.conf`
@@ -111,7 +127,7 @@ Using this script, you can adjust the path and flags to the axed program by
 setting the AXED and FLAGS environment variables in the file
 /etc/sysconfig/axed. You can also use the DAEMONOPTS environment variable here.
 
-### Mac OS X
+### macOS
 
 Copy org.axe.axed.plist into ~/Library/LaunchAgents. Load the launch agent by
 running `launchctl load ~/Library/LaunchAgents/org.axe.axed.plist`.
