@@ -276,12 +276,9 @@ public:
         // This is fine at runtime as we'll fall back to using them as a oneshot if they don't support the
         // service bits we want, but we should get them updated to support all service bits wanted by any
         // release ASAP to avoid it where possible.
-        vSeeds.emplace_back("42.192.235.164");
+        vSeeds.emplace_back("42.192.219.83");
         vSeeds.emplace_back("66.151.242.154");
-        vSeeds.emplace_back("5.188.104.245");
-        vSeeds.emplace_back("80.65.23.139");
-        vSeeds.emplace_back("83.221.211.116");
-        vSeeds.emplace_back("91.206.16.214");
+        vSeeds.emplace_back("5.189.173.231");
 
         // AXE addresses start with 'P'
         base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,55);
