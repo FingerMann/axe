@@ -1,9 +1,9 @@
 # Linearize
 Construct a linear, no-fork, best version of the Axe blockchain.
 
-## Step 0: Install axe_hash
+## Step 0: Install dash_hash
 
-https://github.com/axerunners/axe_hash
+https://github.com/axerunners/dash_hash
 
 ## Step 1: Download hash list
 

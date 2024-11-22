@@ -58,11 +58,11 @@ TRAVIS_TIMEOUT_DURATION = 20 * 60
 BASE_SCRIPTS= [
     # Scripts that are run by the travis build process.
     # Longest test should go first, to favor running tests in parallel
-    'feature_dip3_deterministicmns.py', # NOTE: needs axe_hash to pass
+    'feature_dip3_deterministicmns.py', # NOTE: needs dash_hash to pass
     'wallet_hd.py',
     'wallet_backup.py',
     # vv Tests less than 5m vv
-    'feature_block.py', # NOTE: needs axe_hash to pass
+    'feature_block.py', # NOTE: needs dash_hash to pass
     'rpc_fundrawtransaction.py',
     'rpc_fundrawtransaction_hd.py',
     'wallet_multiwallet.py --usecli',
@@ -73,17 +73,17 @@ BASE_SCRIPTS= [
     'wallet_dump.py',
     'rpc_listtransactions.py',
     'feature_multikeysporks.py',
-    'feature_llmq_signing.py', # NOTE: needs axe_hash to pass
-    'feature_llmq_signing.py --spork21', # NOTE: needs axe_hash to pass
-    'feature_llmq_chainlocks.py', # NOTE: needs axe_hash to pass
-    'feature_llmq_connections.py', # NOTE: needs axe_hash to pass
-    'feature_llmq_simplepose.py', # NOTE: needs axe_hash to pass
-    'feature_llmq_is_cl_conflicts.py', # NOTE: needs axe_hash to pass
-    'feature_llmq_is_retroactive.py', # NOTE: needs axe_hash to pass
-    'feature_llmq_dkgerrors.py', # NOTE: needs axe_hash to pass
-    'feature_dip4_coinbasemerkleroots.py', # NOTE: needs axe_hash to pass
+    'feature_llmq_signing.py', # NOTE: needs dash_hash to pass
+    'feature_llmq_signing.py --spork21', # NOTE: needs dash_hash to pass
+    'feature_llmq_chainlocks.py', # NOTE: needs dash_hash to pass
+    'feature_llmq_connections.py', # NOTE: needs dash_hash to pass
+    'feature_llmq_simplepose.py', # NOTE: needs dash_hash to pass
+    'feature_llmq_is_cl_conflicts.py', # NOTE: needs dash_hash to pass
+    'feature_llmq_is_retroactive.py', # NOTE: needs dash_hash to pass
+    'feature_llmq_dkgerrors.py', # NOTE: needs dash_hash to pass
+    'feature_dip4_coinbasemerkleroots.py', # NOTE: needs dash_hash to pass
     # vv Tests less than 60s vv
-    'p2p_sendheaders.py', # NOTE: needs axe_hash to pass
+    'p2p_sendheaders.py', # NOTE: needs dash_hash to pass
     'wallet_zapwallettxes.py',
     'wallet_importmulti.py',
     'mempool_limit.py',
@@ -148,7 +148,7 @@ BASE_SCRIPTS= [
     'rpc_uptime.py',
     'wallet_resendwallettransactions.py',
     'feature_minchainwork.py',
-    'p2p_unrequested_blocks.py', # NOTE: needs axe_hash to pass
+    'p2p_unrequested_blocks.py', # NOTE: needs dash_hash to pass
     'feature_shutdown.py',
     'rpc_privatesend.py',
     'p2p_fingerprint.py',
